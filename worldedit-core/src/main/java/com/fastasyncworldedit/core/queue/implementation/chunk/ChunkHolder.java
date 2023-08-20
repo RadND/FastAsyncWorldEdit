@@ -1059,7 +1059,10 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
                     // Do nothing
                 });
             } catch (Throwable t) {
-                calledLock.unlock();
+                try {
+                    calledLock.unlock();
+                } catch (IllegalMonitorStateException ignored) {
+                }
                 throw t;
             }
         }
