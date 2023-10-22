@@ -189,8 +189,8 @@ public final class NullChunk implements IQueueChunk {
         return Collections.emptySet();
     }
 
-    @Override
-    public void setCreateCopy(boolean createCopy) {
+    public int setCreateCopy(boolean createCopy) {
+        return -1;
     }
 
     @Override
