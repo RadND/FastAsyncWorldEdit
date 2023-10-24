@@ -291,6 +291,8 @@ public interface BukkitImplAdapter<T> extends IBukkitAdapter {
      * @param session The EditSession
      * @param pt      The location
      * @return If it succeeded
+     *
+     * @since TODO
      */
     default boolean generateFeature(ConfiguredFeatureType feature, World world, EditSession session, BlockVector3 pt) {
         throw new UnsupportedOperationException("This adapter does not support generating features.");
@@ -304,6 +306,8 @@ public interface BukkitImplAdapter<T> extends IBukkitAdapter {
      * @param session The EditSession
      * @param pt The location
      * @return If it succeeded
+     *
+     * @since TODO
      */
     default boolean generateStructure(StructureType feature, World world, EditSession session, BlockVector3 pt) {
         throw new UnsupportedOperationException("This adapter does not support generating features.");
