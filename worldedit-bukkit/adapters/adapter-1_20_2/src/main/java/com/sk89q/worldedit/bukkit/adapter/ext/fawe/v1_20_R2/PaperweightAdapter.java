@@ -305,6 +305,21 @@ public final class PaperweightAdapter implements BukkitImplAdapter<net.minecraft
         return combinedId == 0 && state.getBlockType() != BlockTypes.AIR ? OptionalInt.empty() : OptionalInt.of(combinedId);
     }
 
+    public BlockState adapt(net.minecraft.world.level.block.state.BlockState blockState) {
+        int internalId = Block.getId(blockState);
+        BlockState state = BlockStateIdAccess.getBlockStateById(internalId);
+        if (state == null) {
+            state = BukkitAdapter.adapt(CraftBlockData.createData(blockState));
+        }
+
+        return state;
+    }
+
+    public net.minecraft.world.level.block.state.BlockState adapt(BlockState blockState) {
+        int internalId = BlockStateIdAccess.getBlockStateId(blockState);
+        return Block.stateById(internalId);
+    }
+
     @Override
     public BlockState getBlock(Location location) {
         checkNotNull(location);

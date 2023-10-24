@@ -14,12 +14,14 @@ import com.fastasyncworldedit.core.util.TaskManager;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.Tag;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.blocks.BaseItemStack;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.adapter.BukkitImplAdapter;
+import com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_20_R2.PaperweightServerLevelDelegateProxy;
 import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_20_R2.nbt.PaperweightLazyCompoundTag;
 import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_20_R2.regen.PaperweightRegen;
 import com.sk89q.worldedit.entity.BaseEntity;
@@ -50,11 +52,14 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypesCache;
 import com.sk89q.worldedit.world.entity.EntityType;
+import com.sk89q.worldedit.world.generation.ConfiguredFeatureType;
+import com.sk89q.worldedit.world.generation.StructureType;
 import com.sk89q.worldedit.world.item.ItemType;
 import com.sk89q.worldedit.world.registry.BlockMaterial;
 import io.papermc.lib.PaperLib;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.WritableRegistry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -62,23 +67,32 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.TreeType;
+import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.craftbukkit.v1_20_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_20_R2.CraftWorld;
@@ -89,6 +103,7 @@ import org.bukkit.craftbukkit.v1_20_R2.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_20_R2.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.v1_20_R2.util.CraftNamespacedKey;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
@@ -96,6 +111,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -104,6 +120,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -546,6 +563,168 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
         }
         return true;
     }
+
+    @Override
+    public boolean generateFeature(ConfiguredFeatureType feature, World world, EditSession editSession, BlockVector3 pt) {
+        //FAWE start
+        ServerLevel serverLevel = ((CraftWorld) world).getHandle();
+        ChunkGenerator generator = serverLevel.getMinecraftWorld().getChunkSource().getGenerator();
+
+        ConfiguredFeature<?, ?> configuredFeature = serverLevel
+                .registryAccess()
+                .registryOrThrow(Registries.CONFIGURED_FEATURE)
+                .get(ResourceLocation.tryParse(feature.getId()));
+        FaweBlockStateListPopulator populator = new FaweBlockStateListPopulator(serverLevel);
+
+        Map<BlockPos, CraftBlockState> placed = TaskManager.taskManager().sync(() -> {
+            serverLevel.captureTreeGeneration = true;
+            serverLevel.captureBlockStates = true;
+            try {
+                if (!configuredFeature.place(
+                        populator,
+                        generator,
+                        serverLevel.random,
+                        new BlockPos(pt.getX(), pt.getY(), pt.getZ())
+                )) {
+                    return null;
+                }
+                return populator.getList().stream().collect(Collectors.toMap(
+                        CraftBlockState::getPosition,
+                        craftBlockState -> craftBlockState
+                ));
+            } finally {
+                serverLevel.captureBlockStates = false;
+                serverLevel.captureTreeGeneration = false;
+                serverLevel.capturedBlockStates.clear();
+            }
+        });
+
+        return placeFeatureIntoSession(editSession, populator, placed);
+        //FAWE end
+    }
+
+    @Override
+    public boolean generateStructure(StructureType type, World world, EditSession editSession, BlockVector3 pt) {
+        ServerLevel serverLevel = ((CraftWorld) world).getHandle();
+        Structure k = serverLevel
+                .registryAccess()
+                .registryOrThrow(Registries.STRUCTURE)
+                .get(ResourceLocation.tryParse(type.getId()));
+        if (k == null) {
+            return false;
+        }
+
+        ServerChunkCache chunkManager = serverLevel.getChunkSource();
+
+        ChunkPos chunkPos = new ChunkPos(new BlockPos(pt.getBlockX(), pt.getBlockY(), pt.getBlockZ()));
+
+        //FAWE start
+        FaweBlockStateListPopulator populator = new FaweBlockStateListPopulator(serverLevel);
+        Map<BlockPos, CraftBlockState> placed = TaskManager.taskManager().sync(() -> {
+            serverLevel.captureTreeGeneration = true;
+            serverLevel.captureBlockStates = true;
+            try {
+                StructureStart structureStart = k.generate(
+                        serverLevel.registryAccess(),
+                        chunkManager.getGenerator(),
+                        chunkManager.getGenerator().getBiomeSource(),
+                        chunkManager.randomState(),
+                        serverLevel.getStructureManager(),
+                        serverLevel.getSeed(),
+                        chunkPos,
+                        0,
+                        populator,
+                        biome -> true
+                );
+                if (!structureStart.isValid()) {
+                    return null;
+                } else {
+                    BoundingBox boundingBox = structureStart.getBoundingBox();
+                    ChunkPos min = new ChunkPos(
+                            SectionPos.blockToSectionCoord(boundingBox.minX()),
+                            SectionPos.blockToSectionCoord(boundingBox.minZ())
+                    );
+                    ChunkPos max = new ChunkPos(
+                            SectionPos.blockToSectionCoord(boundingBox.maxX()),
+                            SectionPos.blockToSectionCoord(boundingBox.maxZ())
+                    );
+                    ChunkPos.rangeClosed(min, max).forEach((chunkPosx) -> structureStart.placeInChunk(
+                            populator,
+                            serverLevel.structureManager(),
+                            chunkManager.getGenerator(),
+                            serverLevel.getRandom(),
+                            new BoundingBox(
+                                    chunkPosx.getMinBlockX(),
+                                    serverLevel.getMinBuildHeight(),
+                                    chunkPosx.getMinBlockZ(),
+                                    chunkPosx.getMaxBlockX(),
+                                    serverLevel.getMaxBuildHeight(),
+                                    chunkPosx.getMaxBlockZ()
+                            ),
+                            chunkPosx
+                    ));
+                    Map<BlockPos, CraftBlockState> placedBlocks = populator.getList().stream().collect(Collectors.toMap(
+                            CraftBlockState::getPosition,
+                            craftBlockState -> craftBlockState
+                    ));
+                    placedBlocks.putAll(serverLevel.capturedBlockStates);
+                    return placedBlocks;
+                }
+            } finally {
+                serverLevel.captureBlockStates = false;
+                serverLevel.captureTreeGeneration = false;
+                serverLevel.capturedBlockStates.clear();
+            }
+        });
+
+        return placeFeatureIntoSession(editSession, populator, placed);
+        //FAWE end
+    }
+
+    private boolean placeFeatureIntoSession(
+            final EditSession editSession,
+            final FaweBlockStateListPopulator populator,
+            final Map<BlockPos, CraftBlockState> placed
+    ) {
+        if (placed == null || placed.isEmpty()) {
+            return false;
+        }
+
+        for (Map.Entry<BlockPos, CraftBlockState> entry : placed.entrySet()) {
+            CraftBlockState craftBlockState = entry.getValue();
+            if (entry.getValue() == null) {
+                continue;
+            }
+            BlockPos pos = entry.getKey();
+            editSession.setBlock(pos.getX(), pos.getY(), pos.getZ(), BukkitAdapter.adapt(craftBlockState.getBlockData()));
+            BlockEntity blockEntity = populator.getBlockEntity(pos);
+            if (blockEntity != null) {
+                net.minecraft.nbt.CompoundTag tag = blockEntity.saveWithId();
+                editSession.setTile(pos.getX(), pos.getY(), pos.getZ(), (CompoundTag) toNative(tag));
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void setupFeatures() {
+        DedicatedServer server = ((CraftServer) Bukkit.getServer()).getServer();
+
+        // Features
+        for (ResourceLocation name : server.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE).keySet()) {
+            if (ConfiguredFeatureType.REGISTRY.get(name.toString()) == null) {
+                ConfiguredFeatureType.REGISTRY.register(name.toString(), new ConfiguredFeatureType(name.toString()));
+            }
+        }
+
+        // Structures
+        for (ResourceLocation name : server.registryAccess().registryOrThrow(Registries.STRUCTURE).keySet()) {
+            if (StructureType.REGISTRY.get(name.toString()) == null) {
+                StructureType.REGISTRY.register(name.toString(), new StructureType(name.toString()));
+            }
+        }
+    }
+
 
     @Override
     public BaseItemStack adapt(org.bukkit.inventory.ItemStack itemStack) {

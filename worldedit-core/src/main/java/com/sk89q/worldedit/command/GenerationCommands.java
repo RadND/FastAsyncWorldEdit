@@ -64,7 +64,7 @@ import org.enginehub.piston.annotation.param.Arg;
 import org.enginehub.piston.annotation.param.Switch;
 import org.jetbrains.annotations.Range;
 
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -349,19 +349,28 @@ public class GenerationCommands {
 
     @Command(
             name = "/feature",
+            //FAWE start
+            aliases = {"/placefeature"},
+            //FAWE end
             desc = "Generate Minecraft features"
     )
+    @Logging(PLACEMENT)
     @CommandPermissions("worldedit.generation.feature")
-    @Logging(POSITION)
-    public int feature(Actor actor, LocalSession session, EditSession editSession,
-                       @Arg(desc = "The feature")
-                       ConfiguredFeatureType feature) throws WorldEditException {
-        if (editSession.getWorld().generateFeature(feature, editSession, session.getPlacementPosition(actor))) {
-            actor.printInfo(Caption.of("worldedit.feature.created"));
+    public int feature(
+            Actor actor, LocalSession session, EditSession editSession,
+            @Arg(desc = "Type of feature to place", def = "forest_rock")
+            ConfiguredFeatureType feature
+    ) throws WorldEditException {
+        //FAWE start
+        int affected = editSession.generateFeature(feature, session.getPlacementPosition(actor));
+
+        if (affected == 0) {
+            actor.print(Caption.of("worldedit.generate.feature.failed"));
         } else {
-            actor.printError(Caption.of("worldedit.feature.failed"));
+            actor.print(Caption.of("worldedit.feature.created", TextComponent.of(affected)));
         }
-        return 0;
+        return affected;
+        //FAWE end
     }
 
     @Command(
@@ -373,12 +382,16 @@ public class GenerationCommands {
     public int structure(Actor actor, LocalSession session, EditSession editSession,
                         @Arg(desc = "The structure")
                         StructureType feature) throws WorldEditException {
-        if (editSession.getWorld().generateStructure(feature, editSession, session.getPlacementPosition(actor))) {
-            actor.printInfo(Caption.of("worldedit.structure.created"));
+        //FAWE start
+        int affected = editSession.generateStructure(feature, session.getPlacementPosition(actor));
+
+        if (affected > 0) {
+            actor.printInfo(Caption.of("worldedit.structure.created", TextComponent.of(affected)));
         } else {
             actor.printError(Caption.of("worldedit.structure.failed"));
         }
-        return 0;
+        return affected;
+        //FAWE end
     }
 
     @Command(
@@ -750,7 +763,7 @@ public class GenerationCommands {
     )
     @Logging(PLACEMENT)
     @CommandPermissions("worldedit.generation.blob")
-    public int blobBrush(
+    public int blob(
             Actor actor, LocalSession session, EditSession editSession,
             @Arg(desc = "Pattern")
                     Pattern pattern,
@@ -780,7 +793,7 @@ public class GenerationCommands {
         if (actor instanceof Player) {
             ((Player) actor).findFreePosition();
         }
-        actor.print(Caption.of("worldedit.sphere.created", TextComponent.of(affected)));
+        actor.print(Caption.of("worldedit.blob.created", TextComponent.of(affected)));
         return affected;
     }
     //FAWE end

@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_20_R1;
+package com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_20_R2;
 
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -35,7 +35,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-public class  PaperweightServerLevelDelegateProxy implements InvocationHandler {
+public class PaperweightServerLevelDelegateProxy implements InvocationHandler {
 
     private final EditSession editSession;
     private final ServerLevel serverLevel;
