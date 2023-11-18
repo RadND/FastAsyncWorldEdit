@@ -1052,10 +1052,11 @@ public class MCAChunk implements IChunk {
     }
 
     @Override
-    public void setCreateCopy(final boolean createCopy) {
+    public int setCreateCopy(final boolean createCopy) {
         if (createCopy) {
             throw new UnsupportedOperationException("Not supported in Anvil queue mode.");
         }
+        return -1;
     }
 
     @Override
