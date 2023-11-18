@@ -899,7 +899,6 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
 
     @Override
     public Set<Entity> getFullEntities() {
-        checkAndWaitOnCalledLock();
         return delegate.get(this).getFullEntities();
     }
 
