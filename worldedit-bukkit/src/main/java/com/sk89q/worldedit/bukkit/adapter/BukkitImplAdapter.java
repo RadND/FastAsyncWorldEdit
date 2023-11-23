@@ -313,6 +313,13 @@ public interface BukkitImplAdapter<T> extends IBukkitAdapter {
         throw new UnsupportedOperationException("This adapter does not support generating features.");
     }
 
+    /**
+     * Initialize registries that require NMS access.
+     */
+    default void initializeRegistries() {
+
+    }
+
     //FAWE start
     default BlockMaterial getMaterial(BlockType blockType) {
         return getMaterial(blockType.getDefaultState());
