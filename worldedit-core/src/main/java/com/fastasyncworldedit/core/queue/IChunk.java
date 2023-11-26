@@ -20,6 +20,20 @@ public interface IChunk extends Trimable, IChunkGet, IChunkSet {
     }
 
     /**
+     * Get chunkX
+     *
+     * @return the x coordinate of the chunk
+     */
+    int getX();
+
+    /**
+     * Get chunkZ
+     *
+     * @return the z coordinate of the chunk
+     */
+    int getZ();
+
+    /**
      * If the chunk is a delegate, returns its parent's root
      *
      * @return root IChunk

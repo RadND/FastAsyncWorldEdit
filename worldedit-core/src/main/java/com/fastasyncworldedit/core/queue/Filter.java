@@ -2,7 +2,6 @@ package com.fastasyncworldedit.core.queue;
 
 import com.fastasyncworldedit.core.extent.filter.block.FilterBlock;
 import com.sk89q.worldedit.regions.Region;
-import org.jetbrains.annotations.Range;
 
 import javax.annotation.Nullable;
 

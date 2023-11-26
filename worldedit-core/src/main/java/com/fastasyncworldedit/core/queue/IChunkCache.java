@@ -1,7 +1,5 @@
 package com.fastasyncworldedit.core.queue;
 
-import org.jetbrains.annotations.Range;
-
 /**
  * IGetBlocks may be cached by the WorldChunkCache so that it can be used between multiple
  * IQueueExtents - avoids conversion between a palette and raw data on every block get
