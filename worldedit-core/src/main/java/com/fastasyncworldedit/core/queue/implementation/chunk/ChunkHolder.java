@@ -12,6 +12,7 @@ import com.fastasyncworldedit.core.queue.IChunkSet;
 import com.fastasyncworldedit.core.queue.IQueueChunk;
 import com.fastasyncworldedit.core.queue.IQueueExtent;
 import com.fastasyncworldedit.core.queue.Pool;
+import com.fastasyncworldedit.core.util.MemUtil;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.entity.Entity;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -965,7 +966,7 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
     public final IChunkGet getOrCreateGet() {
         if (chunkExisting == null) {
             chunkExisting = newWrappedGet();
-            chunkExisting.trim(false);
+            chunkExisting.trim(MemUtil.isMemoryLimited());
         }
         return chunkExisting;
     }
@@ -1037,10 +1038,10 @@ public class ChunkHolder<T extends Future<T>> implements IQueueChunk<T> {
             try {
                 get.lockCall();
                 boolean postProcess = !(getExtent().getPostProcessor() instanceof EmptyBatchProcessor);
+                final int copyKey = get.setCreateCopy(postProcess);
                 final IChunkSet iChunkSet = getExtent().processSet(this, get, set);
                 Runnable finalizer;
                 if (postProcess) {
-                    int copyKey = get.setCreateCopy(true);
                     finalizer = () -> {
                         getExtent().postProcess(this, get.getCopy(copyKey), iChunkSet);
                         finalize.run();
