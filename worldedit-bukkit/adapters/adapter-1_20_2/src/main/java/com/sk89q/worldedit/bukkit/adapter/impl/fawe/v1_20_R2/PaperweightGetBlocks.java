@@ -2,6 +2,7 @@ package com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_20_R2;
 
 import com.fastasyncworldedit.bukkit.adapter.BukkitGetBlocks;
 import com.fastasyncworldedit.bukkit.adapter.DelegateSemaphore;
+import com.fastasyncworldedit.bukkit.adapter.NativeEntityFunctionSet;
 import com.fastasyncworldedit.core.Fawe;
 import com.fastasyncworldedit.core.FaweCache;
 import com.fastasyncworldedit.core.configuration.Settings;
@@ -341,49 +342,15 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
 
     @Override
     public Set<CompoundTag> getEntities() {
-        ensureLoaded(serverLevel, chunkX, chunkZ);
-        List<Entity> entities = PaperweightPlatformAdapter.getEntities(getChunk());
+        List<Entity> entities = PaperweightPlatformAdapter.getEntities(ensureLoaded(serverLevel, chunkX, chunkZ));
         if (entities.isEmpty()) {
             return Collections.emptySet();
         }
-        int size = entities.size();
-        return new AbstractSet<>() {
-            @Override
-            public int size() {
-                return size;
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return false;
-            }
-
-            @Override
-            public boolean contains(Object get) {
-                if (!(get instanceof CompoundTag getTag)) {
-                    return false;
-                }
-                UUID getUUID = getTag.getUUID();
-                for (Entity entity : entities) {
-                    UUID uuid = entity.getUUID();
-                    if (uuid.equals(getUUID)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Nonnull
-            @Override
-            public Iterator<CompoundTag> iterator() {
-                Iterable<CompoundTag> result = entities.stream().map(input -> {
-                    net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
-                    input.save(tag);
-                    return (CompoundTag) adapter.toNative(tag);
-                }).collect(Collectors.toList());
-                return result.iterator();
-            }
-        };
+        return new NativeEntityFunctionSet<>(entities, Entity::getUUID, e -> {
+            net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+            e.save(tag);
+            return (CompoundTag) adapter.toNative(tag);
+        });
     }
 
     @Override
@@ -392,43 +359,7 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
         if (entities.isEmpty()) {
             return Collections.emptySet();
         }
-        int size = entities.size();
-        return new AbstractSet<>() {
-            @Override
-            public int size() {
-                return size;
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return false;
-            }
-
-            @Override
-            public boolean contains(Object get) {
-                if (!(get instanceof com.sk89q.worldedit.entity.Entity e)) {
-                    return false;
-                }
-                UUID getUUID = e.getState().getNbtData().getUUID();
-                for (Entity entity : entities) {
-                    UUID uuid = entity.getUUID();
-                    if (uuid.equals(getUUID)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Nonnull
-            @Override
-            public Iterator<com.sk89q.worldedit.entity.Entity> iterator() {
-                Iterable<com.sk89q.worldedit.entity.Entity> result = entities
-                        .stream()
-                        .map(input -> new BukkitEntity(input.getBukkitEntity()))
-                        .collect(Collectors.toList());
-                return result.iterator();
-            }
-        };
+        return new NativeEntityFunctionSet<>(entities, Entity::getUUID, e -> new BukkitEntity(e.getBukkitEntity()));
     }
 
     private void removeEntity(Entity entity) {
