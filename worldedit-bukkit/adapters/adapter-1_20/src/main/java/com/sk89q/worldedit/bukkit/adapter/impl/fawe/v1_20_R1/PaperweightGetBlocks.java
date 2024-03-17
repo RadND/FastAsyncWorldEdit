@@ -390,17 +390,17 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
         if (!callLock.isHeldByCurrentThread()) {
             throw new IllegalStateException("Attempted to call chunk GET but chunk was not call-locked.");
         }
-        forceLoadSections = false;
-        PaperweightGetBlocks_Copy copy = createCopy ? new PaperweightGetBlocks_Copy(levelChunk) : null;
-        if (createCopy) {
-            if (copies.containsKey(copyKey)) {
-                throw new IllegalStateException("Copy key already used.");
-            }
-            copies.put(copyKey, copy);
+        if (createCopy && copies.containsKey(copyKey)) { // Do not sometimes load chunk if we're going to error
+            throw new IllegalStateException("Copy key already used.");
         }
         try {
+            forceLoadSections = false;
             ServerLevel nmsWorld = serverLevel;
             LevelChunk nmsChunk = ensureLoaded(nmsWorld, chunkX, chunkZ);
+            PaperweightGetBlocks_Copy copy = createCopy ? new PaperweightGetBlocks_Copy(nmsChunk) : null;
+            if (createCopy) {
+                copies.put(copyKey, copy);
+            }
 
             // Remove existing tiles. Create a copy so that we can remove blocks
             Map<BlockPos, BlockEntity> chunkTiles = new HashMap<>(nmsChunk.getBlockEntities());
