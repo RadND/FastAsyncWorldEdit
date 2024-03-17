@@ -398,9 +398,12 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
             forceLoadSections = false;
             ServerLevel nmsWorld = serverLevel;
             LevelChunk nmsChunk = ensureLoaded(nmsWorld, chunkX, chunkZ);
-            PaperweightGetBlocks_Copy copy = createCopy ? new PaperweightGetBlocks_Copy(nmsChunk) : null;
+            PaperweightGetBlocks_Copy copy;
             if (createCopy) {
+                copy = new PaperweightGetBlocks_Copy(nmsChunk);
                 copies.put(copyKey, copy);
+            } else {
+                copy = null;
             }
 
             // Remove existing tiles. Create a copy so that we can remove blocks
