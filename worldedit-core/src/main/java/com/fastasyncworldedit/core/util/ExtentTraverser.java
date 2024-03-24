@@ -51,11 +51,10 @@ public class ExtentTraverser<T extends Extent> {
         return last;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     public <U extends Extent> U findAndGet(Class<U> clazz) {
-        ExtentTraverser<Extent> traverser = find((Class<Extent>) clazz);
-        return (traverser != null) ? (U) traverser.get() : null;
+        ExtentTraverser<U> traverser = find(clazz);
+        return (traverser != null) ? traverser.get() : null;
     }
 
     @SuppressWarnings("unchecked")
