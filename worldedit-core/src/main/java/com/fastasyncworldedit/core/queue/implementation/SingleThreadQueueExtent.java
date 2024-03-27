@@ -9,7 +9,6 @@ import com.fastasyncworldedit.core.extent.processor.EmptyBatchProcessor;
 import com.fastasyncworldedit.core.extent.processor.ExtentBatchProcessorHolder;
 import com.fastasyncworldedit.core.extent.processor.ProcessorScope;
 import com.fastasyncworldedit.core.internal.exception.FaweException;
-import com.fastasyncworldedit.core.queue.IChunk;
 import com.fastasyncworldedit.core.queue.IChunkCache;
 import com.fastasyncworldedit.core.queue.IChunkGet;
 import com.fastasyncworldedit.core.queue.IChunkSet;
@@ -46,15 +45,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * This queue is reusable {@link #init(Extent, IChunkCache, IChunkCache)}
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implements IQueueExtent<IQueueChunk> {
+public final class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implements IQueueExtent<IQueueChunk> {
 
     private static final Logger LOGGER = LogManagerCompat.getLogger();
 
-    // Pool discarded chunks for reuse (can safely be cleared by another thread)
-    // private static final ConcurrentLinkedQueue<IChunk> CHUNK_POOL = new ConcurrentLinkedQueue<>();
     // Chunks currently being queued / worked on
-    private final Long2ObjectLinkedOpenHashMap<IQueueChunk> chunks = new Long2ObjectLinkedOpenHashMap<>();
-    private final ConcurrentLinkedQueue<Future> submissions = new ConcurrentLinkedQueue<>();
+    private final Long2ObjectLinkedOpenHashMap<IQueueChunk<?>> chunks = new Long2ObjectLinkedOpenHashMap<>();
+    private final ConcurrentLinkedQueue<Future<?>> submissions = new ConcurrentLinkedQueue<>();
     private final ReentrantLock getChunkLock = new ReentrantLock();
     private World world = null;
     private int minY = 0;
@@ -145,12 +142,10 @@ public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implemen
         if (!this.initialized) {
             return;
         }
-        if (!this.chunks.isEmpty()) {
-            getChunkLock.lock();
-            for (IChunk chunk : this.chunks.values()) {
-                chunk.recycle();
-            }
+        getChunkLock.lock();
+        try {
             this.chunks.clear();
+        } finally {
             getChunkLock.unlock();
         }
         this.enabledQueue = true;
@@ -161,6 +156,7 @@ public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implemen
         this.setProcessor(EmptyBatchProcessor.getInstance());
         this.setPostProcessor(EmptyBatchProcessor.getInstance());
         this.world = null;
+        this.faweExceptionReasonsUsed = new boolean[FaweException.Type.values().length];
     }
 
     /**
@@ -244,7 +240,6 @@ public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implemen
                 }
             }
             if (chunk.isEmpty()) {
-                chunk.recycle();
                 Future result = Futures.immediateFuture(null);
                 return (V) result;
             }
