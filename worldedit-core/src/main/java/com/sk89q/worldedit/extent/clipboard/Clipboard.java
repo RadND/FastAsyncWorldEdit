@@ -365,7 +365,9 @@ public interface Clipboard extends Extent, Iterable<BlockVector3>, Closeable, Fl
     }
 
     default void paste(Extent extent, BlockVector3 to, boolean pasteAir, boolean pasteEntities, boolean pasteBiomes) {
+        boolean close = false;
         if (extent instanceof World) {
+            close = true;
             EditSessionBuilder builder = WorldEdit
                     .getInstance()
                     .newEditSessionBuilder()
@@ -418,6 +420,9 @@ public interface Clipboard extends Extent, Iterable<BlockVector3>, Closeable, Fl
                 );
                 extent.createEntity(newPos, entity.getState());
             }
+        }
+        if (close) {
+            ((EditSession) extent).close();
         }
     }
     //FAWE end

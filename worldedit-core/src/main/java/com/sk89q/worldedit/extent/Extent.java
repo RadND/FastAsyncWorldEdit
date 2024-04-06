@@ -679,7 +679,7 @@ public interface Extent extends InputExtent, OutputExtent {
      * @return
      */
     default Clipboard lazyCopy(Region region) {
-        WorldCopyClipboard faweClipboard = new WorldCopyClipboard(() -> this, region);
+        WorldCopyClipboard faweClipboard = WorldCopyClipboard.of(this, region);
         faweClipboard.setOrigin(region.getMinimumPoint());
         return faweClipboard;
     }
