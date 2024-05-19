@@ -79,6 +79,8 @@ public class Settings extends Config {
     @Create
     public REGION_RESTRICTIONS_OPTIONS REGION_RESTRICTIONS_OPTIONS;
     @Create
+    public GENERAL GENERAL;
+    @Create
     public ConfigBlock<LIMITS> LIMITS;
 
     private Settings() {
@@ -144,6 +146,14 @@ public class Settings extends Config {
                 limit.MAX_HISTORY = Math.max(
                         limit.MAX_HISTORY,
                         newLimit.MAX_HISTORY_MB != -1 ? newLimit.MAX_HISTORY_MB : Integer.MAX_VALUE
+                );
+                limit.SCHEM_FILE_NUM_LIMIT = Math.max(
+                        limit.SCHEM_FILE_NUM_LIMIT,
+                        newLimit.SCHEM_FILE_NUM_LIMIT != -1 ? newLimit.SCHEM_FILE_NUM_LIMIT : Integer.MAX_VALUE
+                );
+                limit.SCHEM_FILE_SIZE_LIMIT = Math.max(
+                        limit.SCHEM_FILE_SIZE_LIMIT,
+                        newLimit.SCHEM_FILE_SIZE_LIMIT != -1 ? newLimit.SCHEM_FILE_SIZE_LIMIT : Integer.MAX_VALUE
                 );
                 limit.MAX_EXPRESSION_MS = Math.max(
                         limit.MAX_EXPRESSION_MS,
@@ -353,6 +363,18 @@ public class Settings extends Config {
                 " - History on disk or memory will be deleted",
         })
         public int MAX_HISTORY_MB = -1;
+        @Comment({
+                "Sets a maximum limit (in kb) for the size of a player's schematics directory (per-player mode only)",
+                "Set to -1 to disable"
+        })
+        @Migrate("experimental.per-player-file-size-limit")
+        public int SCHEM_FILE_SIZE_LIMIT = -1;
+        @Comment({
+                "Sets a maximum limit for the amount of schematics in a player's schematics directory (per-player mode only)",
+                "Set to -1 to disable"
+        })
+        @Migrate("experimental.per-player-file-num-limit")
+        public int SCHEM_FILE_NUM_LIMIT = -1;
         @Comment("Maximum time in milliseconds //calc can execute")
         public int MAX_EXPRESSION_MS = 50;
         @Comment({
@@ -615,18 +637,6 @@ public class Settings extends Config {
         })
         public boolean ALLOW_TICK_FLUIDS = false;
 
-        @Comment({
-                "Sets a maximum limit (in kb) for the size of a player's schematics directory (per-player mode only)",
-                "Set to -1 to disable"
-        })
-        public int PER_PLAYER_FILE_SIZE_LIMIT = -1;
-
-        @Comment({
-                "Sets a maximum limit for the amount of schematics in a player's schematics directory (per-player mode only)",
-                "Set to -1 to disable"
-        })
-        public int PER_PLAYER_FILE_NUM_LIMIT = -1;
-
     }
 
     @Comment({"Web/HTTP connection related settings"})
@@ -741,6 +751,15 @@ public class Settings extends Config {
         public int MODE = 1;
         @Comment({"If existing lighting should be removed before relighting"})
         public boolean REMOVE_FIRST = true;
+
+    }
+
+    public static class GENERAL {
+
+        @Comment({
+                "If the player should be relocated/unstuck when a generation command would bury them",
+        })
+        public boolean UNSTUCK_ON_GENERATE = true;
 
     }
 
