@@ -6,8 +6,8 @@ import java.time.format.DateTimeFormatter
 import xyz.jpenilla.runpaper.task.RunServer
 
 plugins {
-    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
-    id("xyz.jpenilla.run-paper") version "2.2.3"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("xyz.jpenilla.run-paper") version "2.2.4"
 }
 
 if (!File("$rootDir/.git").exists()) {
@@ -83,7 +83,7 @@ allprojects {
 }
 
 applyCommonConfiguration()
-val supportedVersions = listOf("1.18.2", "1.19.4", "1.20", "1.20.4")
+val supportedVersions = listOf("1.19.4", "1.20", "1.20.4", "1.20.5", "1.20.6")
 
 tasks {
     supportedVersions.forEach {
