@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public abstract class PlacementStateProcessor extends AbstractDelegateExtent implements IBatchProcessor, Filter, Pattern {
 
     private static final Direction[] NESW = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-    private static final boolean SETUP = false;
+    private static volatile boolean SETUP = false;
     private static BlockTypeMask DEFAULT_MASK = null;
 
     protected final Extent extent;
@@ -105,6 +105,7 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
                 DEFAULT_MASK.add(category.getAll());
             }
         }
+        SETUP = true;
     }
 
     @Override
