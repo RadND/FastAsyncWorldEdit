@@ -22,7 +22,6 @@ public class PaperweightLevelProxy extends ServerLevel {
     private PaperweightFaweAdapter adapter;
     private Extent extent;
     private ServerLevel serverLevel;
-    private boolean enabled = false;
 
     @SuppressWarnings("DataFlowIssue")
     public PaperweightLevelProxy() {
@@ -47,14 +46,10 @@ public class PaperweightLevelProxy extends ServerLevel {
         return newLevel;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
     @Nullable
     @Override
     public BlockEntity getBlockEntity(@Nonnull BlockPos blockPos) {
-        if (!enabled) {
+        if (blockPos.getX() == Integer.MAX_VALUE) {
             return null;
         }
         BlockEntity tileEntity = this.serverLevel.getChunkAt(blockPos).getBlockEntity(blockPos);
@@ -77,7 +72,7 @@ public class PaperweightLevelProxy extends ServerLevel {
     @Override
     @Nonnull
     public BlockState getBlockState(@Nonnull BlockPos blockPos) {
-        if (!enabled) {
+        if (blockPos.getX() == Integer.MAX_VALUE) {
             return Blocks.AIR.defaultBlockState();
         }
         com.sk89q.worldedit.world.block.BlockState state = this.extent.getBlock(
@@ -92,7 +87,7 @@ public class PaperweightLevelProxy extends ServerLevel {
     @Override
     @Nonnull
     public FluidState getFluidState(@Nonnull BlockPos pos) {
-        if (!enabled) {
+        if (pos.getX() == Integer.MAX_VALUE) {
             return Fluids.EMPTY.defaultFluidState();
         }
         return getBlockState(pos).getFluidState();
@@ -101,7 +96,7 @@ public class PaperweightLevelProxy extends ServerLevel {
     @SuppressWarnings("unused")
     @Override
     public boolean isWaterAt(@Nonnull BlockPos pos) {
-        if (!enabled) {
+        if (pos.getX() == Integer.MAX_VALUE) {
             return false;
         }
         return getBlockState(pos).getFluidState().is(FluidTags.WATER);

@@ -41,6 +41,7 @@ import com.sk89q.worldedit.extension.platform.Actor;
 import com.sk89q.worldedit.extension.platform.Capability;
 import com.sk89q.worldedit.function.GroundFunction;
 import com.sk89q.worldedit.function.generator.FloraGenerator;
+import com.sk89q.worldedit.function.mask.BlockTypeMask;
 import com.sk89q.worldedit.function.mask.ExistingBlockMask;
 import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.mask.MaskIntersection;
@@ -903,7 +904,9 @@ public class RegionCommands {
     @Confirm(Confirm.Processor.REGION)
     @Preload(Preload.PreloadCheck.PRELOAD)
     public int fixblocks(
-            Actor actor, EditSession editSession, @Selection Region region
+            Actor actor, EditSession editSession, @Selection Region region,
+            @Switch(name = 'n', desc = "Do not perform a second pass ")
+            boolean noSecondPass
     ) {
         int affected = editSession.setBlocks(
                 region,
@@ -911,7 +914,7 @@ public class RegionCommands {
                         .getInstance()
                         .getPlatformManager()
                         .queryCapability(Capability.WORLD_EDITING)
-                        .getPlatformPlacementProcessor(editSession, null, true)
+                        .getPlatformPlacementProcessor(editSession, null, !noSecondPass, true)
         );
         if (affected != 0) {
             actor.print(Caption.of("worldedit.set.done", TextComponent.of(affected)));

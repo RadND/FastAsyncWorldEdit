@@ -10,13 +10,14 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockTypesCache;
 
 import javax.annotation.Nullable;
+import java.io.Flushable;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
-public interface IBatchProcessor {
+public interface IBatchProcessor extends Flushable {
 
     /**
      * Process a chunk that has been set.

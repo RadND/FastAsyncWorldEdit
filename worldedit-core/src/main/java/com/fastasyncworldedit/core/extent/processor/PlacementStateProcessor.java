@@ -1,9 +1,10 @@
 package com.fastasyncworldedit.core.extent.processor;
 
 import com.fastasyncworldedit.core.extent.filter.block.FilterBlock;
+import com.fastasyncworldedit.core.math.IntPair;
+import com.fastasyncworldedit.core.math.IntTriple;
 import com.fastasyncworldedit.core.math.MutableBlockVector3;
 import com.fastasyncworldedit.core.math.MutableVector3;
-import com.fastasyncworldedit.core.queue.Filter;
 import com.fastasyncworldedit.core.queue.IBatchProcessor;
 import com.fastasyncworldedit.core.queue.IChunk;
 import com.fastasyncworldedit.core.queue.IChunkGet;
@@ -27,23 +28,39 @@ import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.block.BlockTypesCache;
 
+import java.util.ArrayDeque;
 import java.util.EnumSet;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-public abstract class PlacementStateProcessor extends AbstractDelegateExtent implements IBatchProcessor, Filter, Pattern {
+public abstract class PlacementStateProcessor extends AbstractDelegateExtent implements IBatchProcessor, Pattern {
 
     private static final Direction[] NESW = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     private static volatile boolean SETUP = false;
     private static BlockTypeMask DEFAULT_MASK = null;
+    private static BlockTypeMask SECOND_MASK = null;
+    private static BlockTypeMask REQUIRES_SECOND_PASS = null;
 
     protected final Extent extent;
     protected final BlockTypeMask mask;
     protected final boolean includeUnedited;
+    protected final boolean secondPass;
+    protected final Queue<IntTriple> crossChunkSecondPasses;
     private final MutableVector3 clickPos = new MutableVector3();
     private final MutableBlockVector3 clickedBlock = new MutableBlockVector3();
 
-    public PlacementStateProcessor(Extent extent, BlockTypeMask mask, boolean includeUnedited) {
+    /**
+     * Process/extent/pattern for performing block updates, e.g. stair shape and glass pane connections
+     *
+     * @param extent          Extent to use
+     * @param mask            Mask of blocks to perform updates on
+     * @param secondPass      Perform a second pass typically around stairs. May perform cross-chunk second passes too
+     * @param includeUnedited if unedited blocks should be processed as well
+     * @since TODO
+     */
+    public PlacementStateProcessor(Extent extent, BlockTypeMask mask, boolean secondPass, boolean includeUnedited) {
         super(extent);
         // Required here as child classes are located within adapters and will therefore be statically accessed on startup,
         // meaning we attempt to access BlockTypes class before it is correctly initialised.
@@ -56,12 +73,29 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
         }
         this.extent = extent;
         this.mask = mask == null ? DEFAULT_MASK : mask;
+        this.secondPass = secondPass;
         this.includeUnedited = includeUnedited;
+        this.crossChunkSecondPasses = secondPass ? null : new ConcurrentLinkedQueue<>();
+    }
+
+    protected PlacementStateProcessor(
+            Extent extent,
+            BlockTypeMask mask,
+            boolean secondPass,
+            boolean includeUnedited,
+            Queue<IntTriple> crossChunkSecondPasses
+    ) {
+        super(extent);
+        this.extent = extent;
+        this.mask = mask;
+        this.secondPass = secondPass;
+        this.includeUnedited = includeUnedited;
+        this.crossChunkSecondPasses = crossChunkSecondPasses;
     }
 
     private static void setup() {
-        DEFAULT_MASK = new BlockTypeMask(new NullExtent());
-        DEFAULT_MASK.add(
+        REQUIRES_SECOND_PASS = new BlockTypeMask(new NullExtent());
+        REQUIRES_SECOND_PASS.add(
                 BlockTypes.IRON_BARS,
                 BlockTypes.GLASS_PANE,
                 BlockTypes.BLACK_STAINED_GLASS_PANE,
@@ -80,6 +114,27 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
                 BlockTypes.ORANGE_STAINED_GLASS_PANE,
                 BlockTypes.RED_STAINED_GLASS_PANE,
                 BlockTypes.WHITE_STAINED_GLASS_PANE,
+                BlockTypes.TRIPWIRE,
+                BlockTypes.TWISTING_VINES_PLANT,
+                BlockTypes.CAVE_VINES_PLANT,
+                BlockTypes.WEEPING_VINES_PLANT,
+                BlockTypes.VINE,
+                BlockTypes.REDSTONE_WIRE
+        );
+        BlockCategory[] categories = new BlockCategory[]{
+                BlockCategories.FENCES,
+                BlockCategories.FENCE_GATES,
+                BlockCategories.WALLS,
+                BlockCategories.CAVE_VINES
+        };
+        for (BlockCategory category : categories) {
+            if (category != null) {
+                REQUIRES_SECOND_PASS.add(category.getAll());
+            }
+        }
+
+        DEFAULT_MASK = REQUIRES_SECOND_PASS.copy();
+        DEFAULT_MASK.add(
                 BlockTypes.CHORUS_PLANT,
                 BlockTypes.DRIPSTONE_BLOCK,
                 BlockTypes.POINTED_DRIPSTONE,
@@ -91,20 +146,20 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
                 BlockTypes.CRAFTER,
                 BlockTypes.MUSHROOM_STEM,
                 BlockTypes.BROWN_MUSHROOM_BLOCK,
-                BlockTypes.RED_MUSHROOM_BLOCK,
-                BlockTypes.TRIPWIRE,
-                BlockTypes.TWISTING_VINES_PLANT,
-                BlockTypes.CAVE_VINES_PLANT,
-                BlockTypes.WEEPING_VINES_PLANT,
-                BlockTypes.VINE,
-                BlockTypes.REDSTONE_WIRE
+                BlockTypes.RED_MUSHROOM_BLOCK
         );
-        BlockCategory[] categories = new BlockCategory[]{BlockCategories.FENCES, BlockCategories.FENCE_GATES, BlockCategories.STAIRS, BlockCategories.WALLS, BlockCategories.BAMBOO_BLOCKS, BlockCategories.CAVE_VINES, BlockCategories.TALL_FLOWERS};
+        categories = new BlockCategory[]{
+                BlockCategories.STAIRS,
+                BlockCategories.BAMBOO_BLOCKS,
+                BlockCategories.TALL_FLOWERS
+        };
         for (BlockCategory category : categories) {
             if (category != null) {
                 DEFAULT_MASK.add(category.getAll());
             }
         }
+        SECOND_MASK = new BlockTypeMask(new NullExtent());
+        SECOND_MASK.add(BlockCategories.STAIRS.getAll());
         SETUP = true;
     }
 
@@ -121,36 +176,86 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
                     continue;
                 }
             }
+            Queue<IntPair> secondPasses = this.secondPass ? new ArrayDeque<>() : null;
             for (int y = 0, i = 0; y < 16; y++) {
                 int blockY = layerY + y;
+                // Perform second pass to ensure changes to stairs are propagated to fences, walls, etc.
+                // Always perform if within chunk boundaries as this is not very costly.
+                // Only perform outside chunk boundaries if secondPass is not null
                 for (int z = 0; z < 16; z++) {
                     int blockZ = chunkZ + z;
                     for (int x = 0; x < 16; x++, i++) {
                         int blockX = chunkX + x;
-                        char ordinal = set == null ? BlockTypesCache.ReservedIDs.__RESERVED__ : set[i];
-                        if (ordinal == BlockTypesCache.ReservedIDs.__RESERVED__) {
-                            if (!includeUnedited) {
-                                continue;
-                            }
-                            if (get == null) {
-                                get = iChunkGet.load(layer);
-                            }
-                            ordinal = get[i];
-                        }
-                        BlockState state = BlockTypesCache.states[ordinal];
-                        if (!mask.test(state.getBlockType())) {
-                            continue;
-                        }
-                        char newOrdinal = getBlockOrdinal(blockX, blockY, blockZ, state);
-                        if (set == null) {
-                            set = iChunkSet.load(layer);
-                        }
-                        set[i] = newOrdinal;
+                        checkAndPerformUpdate(iChunkGet, iChunkSet, get, set, layer, i, blockX, blockY, blockZ, x, z, secondPasses);
                     }
+                }
+                if (!secondPass || secondPasses.isEmpty()) {
+                    continue;
+                }
+                IntPair pair;
+                while ((pair = secondPasses.poll()) != null) {
+                    int x = pair.x();
+                    int z = pair.z();
+                    int blockX = chunkX + x;
+                    int blockZ = chunkZ + z;
+                    if (x < 0 || x > 15 || z < 0 || z > 15) {
+                        crossChunkSecondPasses.add(new IntTriple(blockX, blockY, blockZ));
+                    }
+                    int index = (y & 15) << 8 | z << 4 | x;
+                    checkAndPerformUpdate(iChunkGet, iChunkSet, get, set, layer, index, blockX, blockY, blockZ, x, z, null);
                 }
             }
         }
         return iChunkSet;
+    }
+
+    private void checkAndPerformUpdate(
+            IChunkGet iChunkGet,
+            IChunkSet iChunkSet,
+            char[] get,
+            char[] set,
+            int layer,
+            int index,
+            int blockX,
+            int blockY,
+            int blockZ,
+            int x,
+            int z,
+            Queue<IntPair> secondPasses
+    ) {
+        char ordinal = set == null ? BlockTypesCache.ReservedIDs.__RESERVED__ : set[index];
+        if (ordinal == BlockTypesCache.ReservedIDs.__RESERVED__) {
+            if (!includeUnedited) {
+                return;
+            }
+            if (get == null) {
+                get = iChunkGet.load(layer);
+            }
+            ordinal = get[index];
+        }
+        BlockState state = BlockTypesCache.states[ordinal];
+        if (secondPasses == null && secondPass) {
+            if (!REQUIRES_SECOND_PASS.test(state.getBlockType())) {
+                return;
+            }
+        }
+        if (!mask.test(state.getBlockType())) {
+            return;
+        }
+        char newOrdinal = getBlockOrdinal(blockX, blockY, blockZ, state);
+        if (newOrdinal == ordinal) {
+            return;
+        }
+        if (secondPasses != null && (BlockCategories.STAIRS.contains(state) || secondPass && SECOND_MASK.test(state.getBlockType()))) {
+            secondPasses.add(new IntPair(x - 1, z));
+            secondPasses.add(new IntPair(x + 1, z));
+            secondPasses.add(new IntPair(x, z - 1));
+            secondPasses.add(new IntPair(x, z + 1));
+        }
+        if (set == null) {
+            set = iChunkSet.load(layer);
+        }
+        set[index] = newOrdinal;
     }
 
     @Override
@@ -159,19 +264,40 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
     }
 
     @Override
+    public void flush() {
+        IntTriple coords;
+        while ((coords = crossChunkSecondPasses.poll()) != null) {
+            BlockState state = extent.getBlock(coords.x(), coords.y(), coords.z());
+            char ordinal = state.getOrdinalChar();
+            if (ordinal == BlockTypesCache.ReservedIDs.__RESERVED__) {
+                continue;
+            }
+            if (!mask.test(state.getBlockType())) {
+                continue;
+            }
+            char newOrdinal = getBlockOrdinal(coords.x(), coords.y(), coords.z(), state);
+            if (newOrdinal == ordinal) {
+                continue;
+            }
+            extent.setBlock(coords.x(), coords.y(), coords.z(), BlockTypesCache.states[newOrdinal]);
+        }
+    }
+
+    @Override
     public abstract PlacementStateProcessor fork();
 
     // Require block type to avoid duplicate lookup
     protected abstract char getStateAtFor(
-            int x, int y, int z, BlockState state, Vector3 clickPos, Direction clickedFaceDirection, BlockVector3 clickedBlock
+            int x,
+            int y,
+            int z,
+            BlockState state,
+            Vector3 clickPos,
+            Direction clickedFaceDirection,
+            BlockVector3 clickedBlock
     );
 
-    private char getBlockOrdinal(
-            final int blockX,
-            final int blockY,
-            final int blockZ,
-            final BlockState state
-    ) {
+    private char getBlockOrdinal(final int blockX, final int blockY, final int blockZ, final BlockState state) {
         EnumSet<Direction> dirs = Direction.getDirections(state);
         Direction clickedFaceDirection = null; // This should be always be set by the below.
         Set<String> states = state.getStates().keySet().stream().map(Property::getName).collect(Collectors.toSet());

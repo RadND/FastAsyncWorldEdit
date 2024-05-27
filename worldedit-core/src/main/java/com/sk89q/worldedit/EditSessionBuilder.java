@@ -65,6 +65,8 @@ import com.sk89q.worldedit.extent.inventory.BlockBag;
 import com.sk89q.worldedit.internal.util.LogManagerCompat;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.util.Identifiable;
+import com.sk89q.worldedit.util.SideEffect;
+import com.sk89q.worldedit.util.SideEffectSet;
 import com.sk89q.worldedit.util.eventbus.EventBus;
 import com.sk89q.worldedit.util.formatting.text.Component;
 import com.sk89q.worldedit.util.formatting.text.TextComponent;
@@ -104,6 +106,7 @@ public final class EditSessionBuilder {
     private Extent extent;
     private boolean compiled;
     private boolean wrapped;
+    private SideEffectSet sideEffectSet = SideEffectSet.defaults();
 
     private @Nullable
     World world;
@@ -416,6 +419,14 @@ public final class EditSessionBuilder {
     }
 
     /**
+     * Set the side effects to be used with this edit
+     */
+    public EditSessionBuilder setSideEffectSet(@Nullable SideEffectSet sideEffectSet) {
+        this.sideEffectSet = sideEffectSet;
+        return setDirty();
+    }
+
+    /**
      * Compile the builder to the settings given. Prepares history, limits, lighting, etc.
      */
     public EditSessionBuilder compile() {
@@ -444,6 +455,9 @@ public final class EditSessionBuilder {
             } else {
                 fastMode = actor.getSession().hasFastMode();
             }
+        }
+        if (fastMode) {
+            sideEffectSet = SideEffectSet.none();
         }
         if (checkMemory == null) {
             checkMemory = actor != null && !this.fastMode;
@@ -491,7 +505,7 @@ public final class EditSessionBuilder {
             }
             extent = this.bypassAll = wrapExtent(extent, eventBus, event, EditSession.Stage.BEFORE_CHANGE);
             this.bypassHistory = this.extent = wrapExtent(bypassAll, eventBus, event, EditSession.Stage.BEFORE_REORDER);
-            if (!this.fastMode || changeSet != null) {
+            if (!this.fastMode  || this.sideEffectSet.shouldApply(SideEffect.HISTORY) || changeSet != null) {
                 if (changeSet == null) {
                     if (Settings.settings().HISTORY.USE_DISK) {
                         UUID uuid = actor == null ? Identifiable.CONSOLE : actor.getUniqueId();
@@ -546,13 +560,31 @@ public final class EditSessionBuilder {
             }
             // There's no need to do the below (and it'll also just be a pain to implement) if we're not placing chunks
             if (placeChunks) {
-                if (((relightMode != null && relightMode != RelightMode.NONE) || (relightMode == null && Settings.settings().LIGHTING.MODE > 0))) {
-                    relighter = WorldEdit.getInstance().getPlatformManager()
+                if (this.sideEffectSet.shouldApply(SideEffect.LIGHTING) &&
+                        ((relightMode != null && relightMode != RelightMode.NONE) || (relightMode == null && Settings.settings().LIGHTING.MODE > 0))) {
+                    relighter = WorldEdit
+                            .getInstance()
+                            .getPlatformManager()
                             .queryCapability(Capability.WORLD_EDITING)
-                            .getRelighterFactory().createRelighter(relightMode, world, queue);
+                            .getRelighterFactory()
+                            .createRelighter(relightMode, world, queue);
                     queue.addProcessor(new RelightProcessor(relighter));
                 }
-                queue.addProcessor(new HeightmapProcessor(world.getMinY(), world.getMaxY()));
+                if (this.sideEffectSet.shouldApply(SideEffect.HEIGHTMAPS)) {
+                    queue.addProcessor(new HeightmapProcessor(world.getMinY(), world.getMaxY()));
+                }
+                if (this.sideEffectSet.shouldApply(SideEffect.UPDATE) || this.sideEffectSet.shouldApply(SideEffect.NEIGHBORS)) {
+                    queue.addProcessor(WorldEdit
+                            .getInstance()
+                            .getPlatformManager()
+                            .queryCapability(Capability.WORLD_EDITING)
+                            .getPlatformPlacementProcessor(
+                                    queue,
+                                    null,
+                                    Settings.settings().GENERAL.PERFORM_SECOND_UPDATE_PASS,
+                                    true
+                            ));
+                }
 
                 if (!Settings.settings().EXPERIMENTAL.KEEP_ENTITIES_IN_BLOCKS) {
                     queue.addProcessor(new EntityInBlockRemovingProcessor());
@@ -708,6 +740,13 @@ public final class EditSessionBuilder {
      */
     public AbstractChangeSet getChangeTask() {
         return changeSet;
+    }
+
+    /**
+     * Get the SideEffectSet that will be used
+     */
+    public SideEffectSet getSideEffectSet() {
+        return sideEffectSet;
     }
 
     /**

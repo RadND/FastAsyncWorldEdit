@@ -13,6 +13,7 @@ import com.fastasyncworldedit.core.util.NbtUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.sk89q.jnbt.Tag;
 import com.sk89q.worldedit.blocks.BaseItemStack;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -285,9 +286,16 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         return state.toBaseBlock();
     }
 
+    private static final Set<SideEffect> SUPPORTED_SIDE_EFFECTS = Sets.immutableEnumSet(
+            SideEffect.HISTORY,
+            SideEffect.HEIGHTMAPS,
+            SideEffect.LIGHTING,
+            SideEffect.NEIGHBORS
+    );
+
     @Override
     public Set<SideEffect> getSupportedSideEffects() {
-        return SideEffectSet.defaults().getSideEffectsToApply();
+        return SUPPORTED_SIDE_EFFECTS;
     }
 
     @Override
@@ -607,8 +615,13 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
     }
 
     @Override
-    public PlacementStateProcessor getPlatformPlacementProcessor(Extent extent, BlockTypeMask mask, boolean includeUnedited) {
-        return new PaperweightPlacementStateProcessor(extent, mask, includeUnedited);
+    public PlacementStateProcessor getPlatformPlacementProcessor(
+            Extent extent,
+            BlockTypeMask mask,
+            boolean secondPass,
+            boolean includeUnedited
+    ) {
+        return new PaperweightPlacementStateProcessor(extent, mask, secondPass, includeUnedited);
     }
 
     private boolean wasAccessibleSinceLastSave(ChunkHolder holder) {

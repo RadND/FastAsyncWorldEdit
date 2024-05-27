@@ -37,6 +37,7 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
 import org.apache.logging.log4j.Logger;
 
+import java.io.Flushable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -135,7 +136,7 @@ public class ParallelQueueExtent extends PassthroughExtent {
             // if PQE is ever used with PARALLEL_THREADS = 1, or only one chunk is edited, just run sequentially
             while (chunksIter.hasNext()) {
                 BlockVector2 pos = chunksIter.next();
-                getExtent().apply(null, filter, region, pos.getX(), pos.getZ(), full);
+                getExtent().apply(null, filter, region, pos.x(), pos.z(), full);
             }
         } else {
             final ForkJoinTask[] tasks = IntStream.range(0, size).mapToObj(i -> handler.submit(() -> {
@@ -159,10 +160,13 @@ public class ParallelQueueExtent extends PassthroughExtent {
                                         break;
                                     }
                                     final BlockVector2 pos = chunksIter.next();
-                                    chunkX = pos.getX();
-                                    chunkZ = pos.getZ();
+                                    chunkX = pos.x();
+                                    chunkZ = pos.z();
                                 }
                                 block = queue.apply(block, newFilter, region, chunkX, chunkZ, full);
+                            }
+                            if (newFilter instanceof Flushable flushable) {
+                                flushable.flush();
                             }
                             queue.flush();
                         } catch (Throwable t) {

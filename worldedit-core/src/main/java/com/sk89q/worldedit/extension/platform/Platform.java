@@ -284,7 +284,12 @@ public interface Platform extends Keyed {
      * Returns an {@link PlacementStateProcessor} instance for processing placed blocks to "fix" them.
      * @since TODO
      */
-    default PlacementStateProcessor getPlatformPlacementProcessor(Extent extent, BlockTypeMask mask, boolean includeUnedited) {
+    default PlacementStateProcessor getPlatformPlacementProcessor(
+            Extent extent,
+            BlockTypeMask mask,
+            boolean secondPass,
+            boolean includeUnedited
+    ) {
         return null;
     }
     //FAWE end

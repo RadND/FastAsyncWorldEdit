@@ -1,6 +1,7 @@
 package com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_20_R1;
 
 import com.fastasyncworldedit.core.extent.processor.PlacementStateProcessor;
+import com.fastasyncworldedit.core.math.IntTriple;
 import com.fastasyncworldedit.core.util.ExtentTraverser;
 import com.fastasyncworldedit.core.wrappers.WorldWrapper;
 import com.sk89q.worldedit.EditSession;
@@ -21,6 +22,7 @@ import net.minecraft.world.phys.Vec3;
 import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
 
 import javax.annotation.Nullable;
+import java.util.Queue;
 
 public class PaperweightPlacementStateProcessor extends PlacementStateProcessor {
 
@@ -28,13 +30,15 @@ public class PaperweightPlacementStateProcessor extends PlacementStateProcessor 
             .getInstance()
             .getBukkitImplAdapter());
     private final FaweMutableBlockPlaceContext mutableBlockPlaceContext;
+    private final PaperweightLevelProxy proxyLevel;
 
     public PaperweightPlacementStateProcessor(
             final Extent extent,
             final BlockTypeMask mask,
-            final boolean includeUnedited
+            boolean secondPass,
+            boolean includeUnedited
     ) {
-        super(extent, mask, includeUnedited);
+        super(extent, mask, secondPass, includeUnedited);
         World world;
         if (extent.isWorld()) {
             world = (World) extent;
@@ -53,8 +57,23 @@ public class PaperweightPlacementStateProcessor extends PlacementStateProcessor 
                 ((CraftWorld) bukkitWorld.getWorld()).getHandle(),
                 extent
         );
-        mutableBlockPlaceContext = new FaweMutableBlockPlaceContext(proxyLevel);
-        proxyLevel.setEnabled(true);
+        this.proxyLevel = PaperweightLevelProxy.getInstance(((CraftWorld) bukkitWorld.getWorld()).getHandle(),
+                extent
+        );
+        this.mutableBlockPlaceContext = new FaweMutableBlockPlaceContext(proxyLevel);
+    }
+
+    private PaperweightPlacementStateProcessor(
+            Extent extent,
+            BlockTypeMask mask,
+            boolean secondPass,
+            boolean includeUnedited,
+            Queue<IntTriple> crossChunkSecondPasses,
+            PaperweightLevelProxy proxyLevel
+    ) {
+        super(extent, mask, secondPass, includeUnedited, crossChunkSecondPasses);
+        this.proxyLevel = proxyLevel;
+        this.mutableBlockPlaceContext = new FaweMutableBlockPlaceContext(proxyLevel);
     }
 
     @Override
@@ -85,12 +104,19 @@ public class PaperweightPlacementStateProcessor extends PlacementStateProcessor 
         if (child == getExtent()) {
             return this;
         }
-        return new PaperweightPlacementStateProcessor(child, mask, includeUnedited);
+        return new PaperweightPlacementStateProcessor(child, mask, secondPass, includeUnedited);
     }
 
     @Override
     public PlacementStateProcessor fork() {
-        return new PaperweightPlacementStateProcessor(extent, mask, includeUnedited);
+        return new PaperweightPlacementStateProcessor(
+                extent,
+                mask,
+                secondPass,
+                includeUnedited,
+                crossChunkSecondPasses,
+                proxyLevel
+        );
     }
 
 }

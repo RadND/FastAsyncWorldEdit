@@ -314,8 +314,13 @@ public class BukkitServerInterface extends AbstractPlatform implements MultiUser
     }
 
     @Override
-    public PlacementStateProcessor getPlatformPlacementProcessor(Extent extent, BlockTypeMask mask, boolean includeUnedited) {
-        return this.plugin.getBukkitImplAdapter().getPlatformPlacementProcessor(extent, mask, includeUnedited);
+    public PlacementStateProcessor getPlatformPlacementProcessor(
+            Extent extent,
+            BlockTypeMask mask,
+            boolean secondPass,
+            boolean includeUnedited
+    ) {
+        return this.plugin.getBukkitImplAdapter().getPlatformPlacementProcessor(extent, mask, secondPass, includeUnedited);
     }
     //FAWE end
 }
