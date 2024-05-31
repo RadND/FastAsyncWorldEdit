@@ -130,9 +130,9 @@ public class GenerationCommands {
                 return 0;
             }
         }
-        worldEdit.checkMaxRadius(radiusX);
-        worldEdit.checkMaxRadius(radiusZ);
-        worldEdit.checkMaxRadius(height);
+        worldEdit.checkMaxRadius(radiusX, actor);
+        worldEdit.checkMaxRadius(radiusZ, actor);
+        worldEdit.checkMaxRadius(height, actor);
 
         if (thickness > radiusX || thickness > radiusZ) {
             actor.print(Caption.of("worldedit.hcyl.thickness-too-large"));
@@ -178,9 +178,9 @@ public class GenerationCommands {
             }
         }
 
-        worldEdit.checkMaxRadius(radiusX);
-        worldEdit.checkMaxRadius(radiusZ);
-        worldEdit.checkMaxRadius(height);
+        worldEdit.checkMaxRadius(radiusX, actor);
+        worldEdit.checkMaxRadius(radiusZ, actor);
+        worldEdit.checkMaxRadius(height, actor);
 
         BlockVector3 pos = session.getPlacementPosition(actor);
         int affected = editSession.makeCylinder(pos, pattern, radiusX, radiusZ, height, !hollow);
@@ -224,9 +224,9 @@ public class GenerationCommands {
             }
         }
 
-        worldEdit.checkMaxRadius(radiusX);
-        worldEdit.checkMaxRadius(radiusZ);
-        worldEdit.checkMaxRadius(height);
+        worldEdit.checkMaxRadius(radiusX, actor);
+        worldEdit.checkMaxRadius(radiusZ, actor);
+        worldEdit.checkMaxRadius(height, actor);
 
         BlockVector3 pos = session.getPlacementPosition(actor);
         int affected = editSession.makeCone(pos, pattern, radiusX, radiusZ, height, !hollow, thickness);
@@ -290,9 +290,9 @@ public class GenerationCommands {
             }
         }
 
-        worldEdit.checkMaxRadius(radiusX);
-        worldEdit.checkMaxRadius(radiusY);
-        worldEdit.checkMaxRadius(radiusZ);
+        worldEdit.checkMaxRadius(radiusX, actor);
+        worldEdit.checkMaxRadius(radiusY, actor);
+        worldEdit.checkMaxRadius(radiusZ, actor);
         BlockVector3 pos = session.getPlacementPosition(actor);
         if (raised) {
             pos = pos.add(0, (int) radiusY, 0);
@@ -323,7 +323,7 @@ public class GenerationCommands {
                     double density
     ) throws WorldEditException {
         checkCommandArgument(0 <= density && density <= 100, "Density must be between 0 and 100");
-        worldEdit.checkMaxRadius(size);
+        worldEdit.checkMaxRadius(size, actor);
         density /= 100;
         int affected = editSession.makeForest(session.getPlacementPosition(actor), size, density, type);
         actor.print(Caption.of("worldedit.forestgen.created", TextComponent.of(affected)));
@@ -345,7 +345,7 @@ public class GenerationCommands {
                     double density
     ) throws WorldEditException {
         checkCommandArgument(0 <= density && density <= 100, "Density must be between 0 and 100");
-        worldEdit.checkMaxRadius(size);
+        worldEdit.checkMaxRadius(size, actor);
         int affected = editSession.makePumpkinPatches(session.getPlacementPosition(actor), size, density);
         actor.print(Caption.of("worldedit.pumpkins.created", TextComponent.of(affected)));
         return affected;
@@ -382,7 +382,7 @@ public class GenerationCommands {
             @Switch(name = 'h', desc = "Make a hollow pyramid")
                     boolean hollow
     ) throws WorldEditException {
-        worldEdit.checkMaxRadius(size);
+        worldEdit.checkMaxRadius(size, actor);
         BlockVector3 pos = session.getPlacementPosition(actor);
         int affected = editSession.makePyramid(pos, pattern, size, !hollow);
         if (actor instanceof Player && Settings.settings().GENERAL.UNSTUCK_ON_GENERATE) {
@@ -440,13 +440,13 @@ public class GenerationCommands {
             zero = max.add(min).multiply(0.5);
             unit = max.subtract(zero);
 
-            if (unit.getX() == 0) {
+            if (unit.x() == 0) {
                 unit = unit.withX(1.0);
             }
-            if (unit.getY() == 0) {
+            if (unit.y() == 0) {
                 unit = unit.withY(1.0);
             }
-            if (unit.getZ() == 0) {
+            if (unit.z() == 0) {
                 unit = unit.withZ(1.0);
             }
         }
@@ -526,13 +526,13 @@ public class GenerationCommands {
             zero = max.add(min).multiply(0.5);
             unit = max.subtract(zero);
 
-            if (unit.getX() == 0) {
+            if (unit.x() == 0) {
                 unit = unit.withX(1.0);
             }
-            if (unit.getY() == 0) {
+            if (unit.y() == 0) {
                 unit = unit.withY(1.0);
             }
-            if (unit.getZ() == 0) {
+            if (unit.z() == 0) {
                 unit = unit.withZ(1.0);
             }
         }
@@ -636,7 +636,7 @@ public class GenerationCommands {
         MainUtil.checkImageHost(url.toURI());
         if (dimensions != null) {
             checkCommandArgument(
-                    (long) dimensions.getX() * dimensions.getZ() <= Settings.settings().WEB.MAX_IMAGE_SIZE,
+                    (long) dimensions.x() * dimensions.z() <= Settings.settings().WEB.MAX_IMAGE_SIZE,
                     Caption.of("fawe.error.image-dimensions", Settings.settings().WEB.MAX_IMAGE_SIZE)
             );
         }
@@ -644,7 +644,7 @@ public class GenerationCommands {
         Future<BufferedImage> future = executor.submit(() -> {
             BufferedImage image = MainUtil.readImage(url);
             if (dimensions != null) {
-                image = ImageUtil.getScaledInstance(image, dimensions.getBlockX(), dimensions.getBlockZ(),
+                image = ImageUtil.getScaledInstance(image, dimensions.x(), dimensions.z(),
                         RenderingHints.VALUE_INTERPOLATION_BILINEAR, false
                 );
             }
@@ -668,8 +668,8 @@ public class GenerationCommands {
         CuboidRegion region = new CuboidRegion(pos1, pos2);
         final BufferedImage finalImage = image;
         RegionVisitor visitor = new RegionVisitor(region, pos -> {
-            int x = pos.getBlockX() - pos1.getBlockX();
-            int z = pos.getBlockZ() - pos1.getBlockZ();
+            int x = pos.x() - pos1.x();
+            int z = pos.z() - pos1.z();
             int color = finalImage.getRGB(x, z);
             BlockType block = tu.getNearestBlock(color);
             if (block != null) {
@@ -735,8 +735,8 @@ public class GenerationCommands {
             @Arg(desc = "double", def = "50")
                     double amplitude
     ) throws WorldEditException {
-        double max = MathMan.max(radius.getX(), radius.getY(), radius.getZ());
-        worldEdit.checkMaxRadius(max);
+        double max = MathMan.max(radius.x(), radius.y(), radius.z());
+        worldEdit.checkMaxRadius(max, actor);
         BlockVector3 pos = session.getPlacementPosition(actor);
         int affected = editSession.makeBlob(
                 pos,
