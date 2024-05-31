@@ -64,6 +64,7 @@ import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.extent.inventory.BlockBag;
 import com.sk89q.worldedit.internal.util.LogManagerCompat;
 import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.regions.RegionIntersection;
 import com.sk89q.worldedit.util.Identifiable;
 import com.sk89q.worldedit.util.SideEffect;
 import com.sk89q.worldedit.util.SideEffectSet;
@@ -484,7 +485,12 @@ public final class EditSessionBuilder {
                 if (unwrapped instanceof IQueueExtent) {
                     extent = queue = (IQueueExtent) unwrapped;
                 } else if (Settings.settings().QUEUE.PARALLEL_THREADS > 1 && !Fawe.isMainThread()) {
-                    ParallelQueueExtent parallel = new ParallelQueueExtent(Fawe.instance().getQueueHandler(), world, fastMode);
+                    ParallelQueueExtent parallel = new ParallelQueueExtent(
+                            Fawe.instance().getQueueHandler(),
+                            world,
+                            fastMode,
+                            sideEffectSet
+                    );
                     queue = parallel.getExtent();
                     extent = parallel;
                 } else {
@@ -560,8 +566,7 @@ public final class EditSessionBuilder {
             }
             // There's no need to do the below (and it'll also just be a pain to implement) if we're not placing chunks
             if (placeChunks) {
-                if (this.sideEffectSet.shouldApply(SideEffect.LIGHTING) &&
-                        ((relightMode != null && relightMode != RelightMode.NONE) || (relightMode == null && Settings.settings().LIGHTING.MODE > 0))) {
+                if (this.sideEffectSet.shouldApply(SideEffect.LIGHTING) || (relightMode != null && relightMode != RelightMode.NONE)) {
                     relighter = WorldEdit
                             .getInstance()
                             .getPlatformManager()
@@ -573,17 +578,16 @@ public final class EditSessionBuilder {
                 if (this.sideEffectSet.shouldApply(SideEffect.HEIGHTMAPS)) {
                     queue.addProcessor(new HeightmapProcessor(world.getMinY(), world.getMaxY()));
                 }
-                if (this.sideEffectSet.shouldApply(SideEffect.UPDATE) || this.sideEffectSet.shouldApply(SideEffect.NEIGHBORS)) {
+                if (this.sideEffectSet.shouldApply(SideEffect.UPDATE) || this.sideEffectSet.shouldApply(SideEffect.NEIGHBORS) || this.sideEffectSet.shouldApply(
+                        SideEffect.VALIDATION)) {
+                    Region region = allowedRegions == null || allowedRegions.length == 0
+                            ? null
+                            : allowedRegions.length == 1 ? allowedRegions[0] : new RegionIntersection(allowedRegions);
                     queue.addProcessor(WorldEdit
                             .getInstance()
                             .getPlatformManager()
                             .queryCapability(Capability.WORLD_EDITING)
-                            .getPlatformPlacementProcessor(
-                                    queue,
-                                    null,
-                                    Settings.settings().GENERAL.PERFORM_SECOND_UPDATE_PASS,
-                                    true
-                            ));
+                            .getPlatformPlacementProcessor(extent, null, region));
                 }
 
                 if (!Settings.settings().EXPERIMENTAL.KEEP_ENTITIES_IN_BLOCKS) {

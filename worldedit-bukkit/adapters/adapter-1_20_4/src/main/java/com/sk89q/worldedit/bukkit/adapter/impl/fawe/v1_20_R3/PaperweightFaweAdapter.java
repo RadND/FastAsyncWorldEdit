@@ -4,7 +4,7 @@ import com.fastasyncworldedit.bukkit.adapter.FaweAdapter;
 import com.fastasyncworldedit.bukkit.adapter.NMSRelighterFactory;
 import com.fastasyncworldedit.core.FaweCache;
 import com.fastasyncworldedit.core.entity.LazyBaseEntity;
-import com.fastasyncworldedit.core.extent.processor.PlacementStateProcessor;
+import com.fastasyncworldedit.core.extent.PlacementStateProcessor;
 import com.fastasyncworldedit.core.extent.processor.lighting.RelighterFactory;
 import com.fastasyncworldedit.core.queue.IBatchProcessor;
 import com.fastasyncworldedit.core.queue.IChunkGet;
@@ -34,7 +34,6 @@ import com.sk89q.worldedit.registry.state.IntegerProperty;
 import com.sk89q.worldedit.registry.state.Property;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.util.SideEffect;
-import com.sk89q.worldedit.util.SideEffectSet;
 import com.sk89q.worldedit.util.formatting.text.Component;
 import com.sk89q.worldedit.util.nbt.BinaryTag;
 import com.sk89q.worldedit.util.nbt.CompoundBinaryTag;
@@ -444,7 +443,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
     }
 
     public net.minecraft.world.level.block.state.BlockState adapt(BlockState blockState) {
-        return Block.stateById(ordinalToIbdID[blockState.getOrdinal()]);
+        return Block.stateById(getOrdinalToIbdID()[blockState.getOrdinal()]);
     }
 
     @Override
@@ -484,7 +483,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
 
     @Override
     public boolean canPlaceAt(org.bukkit.World world, BlockVector3 blockVector3, BlockState blockState) {
-        net.minecraft.world.level.block.state.BlockState blockState1 = Block.stateById(ordinalToIbdID[blockState.getOrdinal()]);
+        net.minecraft.world.level.block.state.BlockState blockState1 = Block.stateById(getOrdinalToIbdID()[blockState.getOrdinal()]);
         return blockState1.hasPostProcess(
                 getServerLevel(world),
                 new BlockPos(blockVector3.getX(), blockVector3.getY(), blockVector3.getZ())
@@ -615,13 +614,8 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
     }
 
     @Override
-    public PlacementStateProcessor getPlatformPlacementProcessor(
-            Extent extent,
-            BlockTypeMask mask,
-            boolean secondPass,
-            boolean includeUnedited
-    ) {
-        return new PaperweightPlacementStateProcessor(extent, mask, secondPass, includeUnedited);
+    public PlacementStateProcessor getPlatformPlacementProcessor(Extent extent, BlockTypeMask mask, Region region) {
+        return new PaperweightPlacementStateProcessor(extent, mask, region);
     }
 
     private boolean wasAccessibleSinceLastSave(ChunkHolder holder) {

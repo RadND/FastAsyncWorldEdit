@@ -784,11 +784,6 @@ public class Settings extends Config {
         })
         public boolean UNSTUCK_ON_GENERATE = true;
 
-        @Comment({
-                "If edits that have a block update processor applied should also perform a second pass",
-        })
-        public boolean PERFORM_SECOND_UPDATE_PASS = true;
-
     }
 
 }

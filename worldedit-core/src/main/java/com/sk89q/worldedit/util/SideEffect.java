@@ -27,7 +27,7 @@ public enum SideEffect {
     //FAWE start - adjust defaults, add history and heightmaps
     HISTORY(State.ON, true),
     HEIGHTMAPS(State.ON, true),
-    LIGHTING(State.OFF, true), // Off defaults to falling through to config
+    LIGHTING(Settings.settings().LIGHTING.MODE == 0 ? State.OFF : State.ON, true),
     NEIGHBORS(State.OFF, true),
     UPDATE(State.OFF, true),
     //FAWE end
