@@ -908,7 +908,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter<net.minecraft
         ConfiguredFeature<?, ?> k = originalWorld.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE).get(ResourceLocation.tryParse(type.getId()));
         ServerChunkCache chunkManager = originalWorld.getChunkSource();
         WorldGenLevel proxyLevel = PaperweightServerLevelDelegateProxy.newInstance(session, originalWorld, this);
-        return k != null && k.place(proxyLevel, chunkManager.getGenerator(), random, new BlockPos(pt.getBlockX(), pt.getBlockY(), pt.getBlockZ()));
+        return k != null && k.place(proxyLevel, chunkManager.getGenerator(), random, new BlockPos(pt.x(), pt.y(), pt.z()));
     }
 
     public boolean generateStructure(StructureType type, World world, EditSession session, BlockVector3 pt) {
@@ -920,7 +920,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter<net.minecraft
 
         ServerChunkCache chunkManager = originalWorld.getChunkSource();
         WorldGenLevel proxyLevel = PaperweightServerLevelDelegateProxy.newInstance(session, originalWorld, this);
-        ChunkPos chunkPos = new ChunkPos(new BlockPos(pt.getBlockX(), pt.getBlockY(), pt.getBlockZ()));
+        ChunkPos chunkPos = new ChunkPos(new BlockPos(pt.x(), pt.y(), pt.z()));
         StructureStart structureStart = k.generate(originalWorld.registryAccess(), chunkManager.getGenerator(), chunkManager.getGenerator().getBiomeSource(), chunkManager.randomState(), chunkManager.chunkMap.structureTemplateManager, originalWorld.getSeed(), chunkPos, 0, proxyLevel, biome -> true);
 
         if (!structureStart.isValid()) {
