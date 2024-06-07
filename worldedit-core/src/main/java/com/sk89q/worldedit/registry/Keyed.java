@@ -29,6 +29,6 @@ public interface Keyed {
      *
      * @return an id
      */
-    String getId();
+    String id();
 
 }

@@ -832,7 +832,7 @@ public class SelectionCommands {
                 toolTip = TextComponent.of(state.getAsString());
                 blockName = blockName.append(TextComponent.of("*"));
             } else {
-                toolTip = TextComponent.of(blockType.getId());
+                toolTip = TextComponent.of(blockType.id());
             }
             blockName = blockName.hoverEvent(HoverEvent.of(HoverEvent.Action.SHOW_TEXT, toolTip));
             line.append(blockName);

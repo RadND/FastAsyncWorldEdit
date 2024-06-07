@@ -40,7 +40,7 @@ public class EntityType implements RegistryItem, Keyed {
     }
 
     @Override
-    public String getId() {
+    public String id() {
         return this.id;
     }
 
@@ -64,12 +64,12 @@ public class EntityType implements RegistryItem, Keyed {
      * @return The name, or ID
      */
     public String getName() {
-        return getId();
+        return id();
     }
 
     @Override
     public String toString() {
-        return getId();
+        return id();
     }
 
     @Override

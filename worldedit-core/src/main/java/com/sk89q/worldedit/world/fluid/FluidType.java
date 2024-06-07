@@ -45,7 +45,7 @@ public class FluidType implements RegistryItem, Keyed {
      * @return The id
      */
     @Override
-    public String getId() {
+    public String id() {
         return this.id;
     }
 
@@ -67,7 +67,7 @@ public class FluidType implements RegistryItem, Keyed {
 
     @Override
     public String toString() {
-        return getId();
+        return id();
     }
 
     @Override

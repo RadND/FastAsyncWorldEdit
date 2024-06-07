@@ -68,13 +68,13 @@ public class BiomeType implements RegistryItem, Keyed, BiomePattern {
      * @return The id
      */
     @Override
-    public String getId() {
+    public String id() {
         return this.id;
     }
 
     @Override
     public String toString() {
-        return getId();
+        return id();
     }
 
     @Override

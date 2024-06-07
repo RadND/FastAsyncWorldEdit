@@ -33,7 +33,7 @@ public class WeatherType implements Keyed {
     }
 
     @Override
-    public String getId() {
+    public String id() {
         return this.id;
     }
 
@@ -43,12 +43,12 @@ public class WeatherType implements Keyed {
      * @return The name, or ID
      */
     public String getName() {
-        return getId();
+        return id();
     }
 
     @Override
     public String toString() {
-        return getId();
+        return id();
     }
 
     @Override

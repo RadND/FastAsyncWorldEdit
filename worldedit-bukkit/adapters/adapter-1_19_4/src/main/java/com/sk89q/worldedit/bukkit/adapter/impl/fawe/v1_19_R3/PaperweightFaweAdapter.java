@@ -494,7 +494,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
     public org.bukkit.inventory.ItemStack adapt(BaseItemStack baseItemStack) {
         ItemStack stack = new ItemStack(
                 DedicatedServer.getServer().registryAccess().registryOrThrow(Registries.ITEM)
-                        .get(ResourceLocation.tryParse(baseItemStack.getType().getId())),
+                        .get(ResourceLocation.tryParse(baseItemStack.getType().id())),
                 baseItemStack.getAmount()
         );
         stack.setTag(((net.minecraft.nbt.CompoundTag) fromNative(baseItemStack.getNbtData())));
@@ -532,7 +532,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         ConfiguredFeature<?, ?> configuredFeature = serverLevel
                 .registryAccess()
                 .registryOrThrow(Registries.CONFIGURED_FEATURE)
-                .get(ResourceLocation.tryParse(feature.getId()));
+                .get(ResourceLocation.tryParse(feature.id()));
         FaweBlockStateListPopulator populator = new FaweBlockStateListPopulator(serverLevel);
 
         Map<BlockPos, CraftBlockState> placed = TaskManager.taskManager().sync(() -> {
@@ -547,10 +547,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
                 )) {
                     return null;
                 }
-                return populator.getList().stream().collect(Collectors.toMap(
-                        CraftBlockState::getPosition,
-                        craftBlockState -> craftBlockState
-                ));
+                return new HashMap<>(populator.getLevel().capturedBlockStates);
             } finally {
                 serverLevel.captureBlockStates = false;
                 serverLevel.captureTreeGeneration = false;
@@ -568,7 +565,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         Structure k = serverLevel
                 .registryAccess()
                 .registryOrThrow(Registries.STRUCTURE)
-                .get(ResourceLocation.tryParse(type.getId()));
+                .get(ResourceLocation.tryParse(type.id()));
         if (k == null) {
             return false;
         }
@@ -719,7 +716,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
                 .getServer()
                 .registryAccess()
                 .registryOrThrow(BIOME);
-        ResourceLocation resourceLocation = ResourceLocation.tryParse(biomeType.getId());
+        ResourceLocation resourceLocation = ResourceLocation.tryParse(biomeType.id());
         Biome biome = registry.get(resourceLocation);
         return registry.getId(biome);
     }

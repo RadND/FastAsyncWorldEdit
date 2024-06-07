@@ -11,6 +11,7 @@ import com.fastasyncworldedit.core.util.MathMan;
 import com.fastasyncworldedit.core.util.ReflectionUtils;
 import com.fastasyncworldedit.core.util.TaskManager;
 import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.MapCodec;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.bukkit.adapter.BukkitImplAdapter;
 import com.sk89q.worldedit.bukkit.adapter.Refraction;
@@ -47,6 +48,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.StateHolder;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.GlobalPalette;
@@ -61,7 +63,6 @@ import net.minecraft.world.level.entity.PersistentEntitySectionManager;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_20_R1.CraftChunk;
-import sun.misc.Unsafe;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -102,6 +103,8 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
     private static final Field fieldTickingFluidCount;
     private static final Field fieldTickingBlockCount;
     private static final Field fieldNonEmptyBlockCount;
+
+    private static final Field fieldPropertiesCodec;
 
     private static final MethodHandle methodGetVisibleChunk;
 
@@ -150,6 +153,9 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
             fieldTickingBlockCount.setAccessible(true);
             fieldNonEmptyBlockCount = LevelChunkSection.class.getDeclaredField(Refraction.pickName("nonEmptyBlockCount", "e"));
             fieldNonEmptyBlockCount.setAccessible(true);
+
+            fieldPropertiesCodec = StateHolder.class.getDeclaredField(Refraction.pickName("propertiesCodec", "f"));
+            fieldPropertiesCodec.setAccessible(true);
 
             Method getVisibleChunkIfPresent = ChunkMap.class.getDeclaredMethod(Refraction.pickName(
                     "getVisibleChunkIfPresent",
@@ -699,6 +705,12 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
         if (unset) {
             ((Villager) entity).setOffers(null);
         }
+    }
+
+    public static MapCodec<net.minecraft.world.level.block.state.BlockState> getStatePropertiesCodec(
+            net.minecraft.world.level.block.state.BlockState state
+    ) throws IllegalAccessException {
+        return (MapCodec<net.minecraft.world.level.block.state.BlockState>) fieldPropertiesCodec.get(state);
     }
 
     record FakeIdMapBlock(int size) implements IdMap<net.minecraft.world.level.block.state.BlockState> {

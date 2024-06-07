@@ -13,8 +13,8 @@ import com.fastasyncworldedit.core.util.TaskManager;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.sk89q.jnbt.CompoundTag;
 import com.mojang.serialization.Codec;
+import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.Tag;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.blocks.BaseItemStack;
@@ -57,8 +57,8 @@ import com.sk89q.worldedit.world.registry.BlockMaterial;
 import io.papermc.lib.PaperLib;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
-import net.minecraft.core.SectionPos;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.WritableRegistry;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.Registries;
@@ -505,7 +505,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
     public org.bukkit.inventory.ItemStack adapt(BaseItemStack baseItemStack) {
         final RegistryAccess.Frozen registryAccess = DedicatedServer.getServer().registryAccess();
         ItemStack stack = new ItemStack(
-                registryAccess.registryOrThrow(Registries.ITEM).get(ResourceLocation.tryParse(baseItemStack.getType().getId())),
+                registryAccess.registryOrThrow(Registries.ITEM).get(ResourceLocation.tryParse(baseItemStack.getType().id())),
                 baseItemStack.getAmount()
         );
         final net.minecraft.nbt.CompoundTag nbt = (net.minecraft.nbt.CompoundTag) fromNative(baseItemStack.getNbtData());
@@ -550,7 +550,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         ConfiguredFeature<?, ?> configuredFeature = serverLevel
                 .registryAccess()
                 .registryOrThrow(Registries.CONFIGURED_FEATURE)
-                .get(ResourceLocation.tryParse(feature.getId()));
+                .get(ResourceLocation.tryParse(feature.id()));
         FaweBlockStateListPopulator populator = new FaweBlockStateListPopulator(serverLevel);
 
         Map<BlockPos, CraftBlockState> placed = TaskManager.taskManager().sync(() -> {
@@ -565,10 +565,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
                 )) {
                     return null;
                 }
-                return populator.getList().stream().collect(Collectors.toMap(
-                        CraftBlockState::getPosition,
-                        craftBlockState -> craftBlockState
-                ));
+                return new HashMap<>(populator.getLevel().capturedBlockStates);
             } finally {
                 serverLevel.captureBlockStates = false;
                 serverLevel.captureTreeGeneration = false;
@@ -586,7 +583,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         Structure k = serverLevel
                 .registryAccess()
                 .registryOrThrow(Registries.STRUCTURE)
-                .get(ResourceLocation.tryParse(type.getId()));
+                .get(ResourceLocation.tryParse(type.id()));
         if (k == null) {
             return false;
         }
@@ -746,7 +743,7 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
                 .getServer()
                 .registryAccess()
                 .registryOrThrow(BIOME);
-        ResourceLocation resourceLocation = ResourceLocation.tryParse(biomeType.getId());
+        ResourceLocation resourceLocation = ResourceLocation.tryParse(biomeType.id());
         Biome biome = registry.get(resourceLocation);
         return registry.getId(biome);
     }

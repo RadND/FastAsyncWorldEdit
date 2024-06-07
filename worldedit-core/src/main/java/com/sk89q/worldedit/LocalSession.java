@@ -1879,7 +1879,7 @@ public class LocalSession implements TextureHolder {
      * @return item id of wand item, or {@code null}
      */
     public String getWandItem() {
-        return wandItem.getId();
+        return wandItem.id();
     }
 
     /**
@@ -1888,7 +1888,7 @@ public class LocalSession implements TextureHolder {
      * @return item id of nav wand item, or {@code null}
      */
     public String getNavWandItem() {
-        return navWandItem.getId();
+        return navWandItem.id();
     }
 
     /**
