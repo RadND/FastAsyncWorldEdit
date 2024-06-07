@@ -367,7 +367,7 @@ public final class SingleThreadQueueExtent extends ExtentBatchProcessorHolder im
                     break;
                 }
                 loadCount++;
-                addChunkLoad(from.getBlockX(), from.getBlockZ());
+                addChunkLoad(from.x(), from.z());
             }
         }
     }

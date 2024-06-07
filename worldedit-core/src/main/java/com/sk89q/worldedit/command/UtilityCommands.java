@@ -50,19 +50,12 @@ import com.sk89q.worldedit.extension.platform.Actor;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.function.EntityFunction;
-import com.sk89q.worldedit.function.block.BlockReplace;
 import com.sk89q.worldedit.function.mask.BlockTypeMask;
-import com.sk89q.worldedit.function.mask.BoundedHeightMask;
 import com.sk89q.worldedit.function.mask.ExistingBlockMask;
 import com.sk89q.worldedit.function.mask.Mask;
-import com.sk89q.worldedit.function.mask.MaskIntersection;
-import com.sk89q.worldedit.function.mask.Masks;
-import com.sk89q.worldedit.function.mask.RegionMask;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.function.pattern.Pattern;
-import com.sk89q.worldedit.function.visitor.DownwardVisitor;
 import com.sk89q.worldedit.function.visitor.EntityVisitor;
-import com.sk89q.worldedit.function.visitor.RecursiveVisitor;
 import com.sk89q.worldedit.internal.annotation.Direction;
 import com.sk89q.worldedit.internal.annotation.VertHeight;
 import com.sk89q.worldedit.internal.expression.EvaluationException;
@@ -70,10 +63,8 @@ import com.sk89q.worldedit.internal.expression.Expression;
 import com.sk89q.worldedit.internal.expression.ExpressionException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector2;
-import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.CylinderRegion;
-import com.sk89q.worldedit.regions.EllipsoidRegion;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.util.formatting.component.SubtleFormat;
 import com.sk89q.worldedit.util.formatting.text.Component;
@@ -246,8 +237,9 @@ public class UtilityCommands {
         double radius = radiusExp.evaluate();
         //FAWE end
         radius = Math.max(1, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
         depth = Math.max(1, depth);
+        we.checkMaxRadius(depth, actor);
 
         BlockVector3 pos = session.getPlacementPosition(actor);
         int affected = editSession.fillDirection(pos, pattern, radius, depth, direction);
@@ -333,9 +325,9 @@ public class UtilityCommands {
         double radius = radiusExp.evaluate();
         //FAWE end
         radius = Math.max(1, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
         depth = depth == null ? Integer.MAX_VALUE : Math.max(1, depth);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
 
         BlockVector3 pos = session.getPlacementPosition(actor);
         int affected = editSession.fillXZ(pos, pattern, radius, depth, true);
@@ -364,7 +356,7 @@ public class UtilityCommands {
         //FAWE end
         double radius = radiusExp.evaluate();
         radius = Math.max(0, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
         int affected = editSession.drainArea(session.getPlacementPosition(actor), radius, waterlogged, plants);
         actor.print(Caption.of("worldedit.drain.drained", TextComponent.of(affected)));
         return affected;
@@ -383,7 +375,7 @@ public class UtilityCommands {
                     double radius
     ) throws WorldEditException {
         radius = Math.max(0, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
         int affected = editSession.fixLiquid(session.getPlacementPosition(actor), radius, BlockTypes.LAVA);
         actor.print(Caption.of("worldedit.fixlava.fixed", TextComponent.of(affected)));
         return affected;
@@ -402,7 +394,7 @@ public class UtilityCommands {
                     double radius
     ) throws WorldEditException {
         radius = Math.max(0, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
         int affected = editSession.fixLiquid(session.getPlacementPosition(actor), radius, BlockTypes.WATER);
         actor.print(Caption.of("worldedit.fixwater.fixed", TextComponent.of(affected)));
         return affected;
@@ -423,7 +415,7 @@ public class UtilityCommands {
                     Integer height
     ) throws WorldEditException {
         size = Math.max(1, size);
-        we.checkMaxRadius(size);
+        we.checkMaxRadius(size, actor);
 
         height = height != null
                 ? Math.min((world.getMaxY() - world.getMinY() + 1), height + 1)
@@ -448,7 +440,7 @@ public class UtilityCommands {
                     Integer height
     ) throws WorldEditException {
         size = Math.max(1, size);
-        we.checkMaxRadius(size);
+        we.checkMaxRadius(size, actor);
 
         height = height != null
                 ? Math.min((world.getMaxY() - world.getMinY() + 1), height + 1)
@@ -476,7 +468,7 @@ public class UtilityCommands {
         new MaskTraverser(mask).setNewExtent(editSession);
         //FAWE end
         radius = Math.max(1, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
 
         int affected = editSession.removeNear(session.getPlacementPosition(actor), mask, radius);
         actor.print(Caption.of("worldedit.removenear.removed", TextComponent.of(affected)));
@@ -503,7 +495,7 @@ public class UtilityCommands {
         new MaskTraverser(from).setNewExtent(editSession);
         //FAWE end
         radius = Math.max(1, radius);
-        we.checkMaxRadius(radius);
+        we.checkMaxRadius(radius, actor);
 
         BlockVector3 base = session.getPlacementPosition(actor);
         BlockVector3 min = base.subtract(radius, radius, radius);
@@ -542,15 +534,15 @@ public class UtilityCommands {
     ) throws WorldEditException {
         size = Math.max(1, size);
         height = Math.max(1, height);
-        we.checkMaxRadius(size);
+        we.checkMaxRadius(size, actor);
 
         BlockVector3 position = session.getPlacementPosition(actor);
 
         CylinderRegion region = new CylinderRegion(
                 position,
                 Vector2.at(size, size),
-                position.getBlockY() - height,
-                position.getBlockY() + height
+                position.y() - height,
+                position.y() + height
         );
         int affected = editSession.simulateSnow(region, stack);
         actor.print(Caption.of(
@@ -579,7 +571,7 @@ public class UtilityCommands {
     ) throws WorldEditException {
         size = Math.max(1, size);
         height = Math.max(1, height);
-        we.checkMaxRadius(size);
+        we.checkMaxRadius(size, actor);
 
         int affected = editSession.thaw(session.getPlacementPosition(actor), size, height);
         actor.print(Caption.of(
@@ -610,7 +602,7 @@ public class UtilityCommands {
     ) throws WorldEditException {
         size = Math.max(1, size);
         height = Math.max(1, height);
-        we.checkMaxRadius(size);
+        we.checkMaxRadius(size, actor);
         final boolean onlyNormalDirt = !convertCoarse;
 
         final int affected = editSession.green(
@@ -635,11 +627,9 @@ public class UtilityCommands {
                     Integer radius
     ) throws WorldEditException {
 
-        LocalConfiguration config = we.getConfiguration();
-
-        int defaultRadius = config.maxRadius != -1 ? Math.min(40, config.maxRadius) : 40;
+        int defaultRadius = actor.getLimit().MAX_RADIUS != -1 ? Math.min(40, actor.getLimit().MAX_RADIUS) : 40;
         int size = radius != null ? Math.max(1, radius) : defaultRadius;
-        we.checkMaxRadius(size);
+        we.checkMaxRadius(size, actor);
 
         Mask mask = new BlockTypeMask(editSession, BlockTypes.FIRE);
         int affected = editSession.removeNear(session.getPlacementPosition(actor), mask, size);
@@ -685,12 +675,12 @@ public class UtilityCommands {
             actor.print(Caption.of("worldedit.butcher.explain-all"));
             return 0;
         } else if (radius == -1) {
-            if (config.butcherMaxRadius != -1) {
-                radius = config.butcherMaxRadius;
+            if (actor.getLimit().MAX_BUTCHER_RADIUS != -1) {
+                radius = actor.getLimit().MAX_BUTCHER_RADIUS;
             }
         }
-        if (config.butcherMaxRadius != -1) {
-            radius = Math.min(radius, config.butcherMaxRadius);
+        if (actor.getLimit().MAX_BUTCHER_RADIUS != -1) {
+            radius = Math.min(radius, actor.getLimit().MAX_BUTCHER_RADIUS);
         }
 
         CreatureButcher flags = new CreatureButcher(actor);
