@@ -23,13 +23,15 @@ import com.fastasyncworldedit.core.registry.RegistryItem;
 import com.sk89q.worldedit.registry.Keyed;
 import com.sk89q.worldedit.registry.NamespacedRegistry;
 
-//FAWE start - implements RegistryItem
+//FAWE start - implements RegistryItem, not a record (internalId needs mutability)
 public class EntityType implements RegistryItem, Keyed {
 //FAWE end
 
     public static final NamespacedRegistry<EntityType> REGISTRY = new NamespacedRegistry<>("entity type", true);
 
+    //FAWE start
     private final String id;
+    private int internalId;
 
     public EntityType(String id) {
         // If it has no namespace, assume minecraft.
@@ -39,13 +41,18 @@ public class EntityType implements RegistryItem, Keyed {
         this.id = id;
     }
 
+    /**
+     * Gets the id of this entity type.
+     *
+     * @return the id
+     * @since TODO
+     * @deprecated use {@link #id()}
+     */
+    @Deprecated(forRemoval = true, since = "TODO")
     @Override
     public String id() {
         return this.id;
     }
-
-    //FAWE start
-    private int internalId;
 
     @Override
     public void setInternalId(int internalId) {
@@ -72,6 +79,7 @@ public class EntityType implements RegistryItem, Keyed {
         return id();
     }
 
+    //FAWE start
     @Override
     public int hashCode() {
         return this.id.hashCode();
@@ -81,5 +89,6 @@ public class EntityType implements RegistryItem, Keyed {
     public boolean equals(Object obj) {
         return obj instanceof EntityType && this.id.equals(((EntityType) obj).id);
     }
+    //FAWE end
 
 }

@@ -22,20 +22,8 @@ package com.sk89q.worldedit.world.weather;
 import com.sk89q.worldedit.registry.Keyed;
 import com.sk89q.worldedit.registry.Registry;
 
-public class WeatherType implements Keyed {
-
+public record WeatherType(String id) implements Keyed {
     public static final Registry<WeatherType> REGISTRY = new Registry<>("weather type");
-
-    private final String id;
-
-    public WeatherType(String id) {
-        this.id = id;
-    }
-
-    @Override
-    public String id() {
-        return this.id;
-    }
 
     /**
      * Gets the name of this weather, or the ID if the name cannot be found.
@@ -50,15 +38,4 @@ public class WeatherType implements Keyed {
     public String toString() {
         return id();
     }
-
-    @Override
-    public int hashCode() {
-        return this.id.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof WeatherType && this.id.equals(((WeatherType) obj).id);
-    }
-
 }
