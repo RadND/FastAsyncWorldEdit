@@ -109,7 +109,6 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
     private final Registry<Biome> biomeRegistry;
     private final IdMap<Holder<Biome>> biomeHolderIdMap;
     private final ConcurrentHashMap<Integer, PaperweightGetBlocks_Copy> copies = new ConcurrentHashMap<>();
-    private final Object sendLock = new Object();
     private LevelChunkSection[] sections;
     private LevelChunk levelChunk;
     private DataLayer[] blockLight;
@@ -821,8 +820,6 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
                 if (bitMask == 0 && biomes == null && !lightUpdate) {
                     callback = null;
                 } else {
-                    int finalMask = bitMask != 0 ? bitMask : lightUpdate ? set.getBitMask() : 0;
-                    boolean finalLightUpdate = lightUpdate;
                     callback = () -> {
                         // Set Modified
                         nmsChunk.setLightCorrect(true); // Set Modified
@@ -830,7 +827,7 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
                         nmsChunk.setUnsaved(true);
                         // send to player
                         if (!set.getSideEffectSet().shouldApply(SideEffect.LIGHTING) || !Settings.settings().LIGHTING.DELAY_PACKET_SENDING) {
-                            this.send(finalMask, finalLightUpdate);
+                            this.send();
                         }
                         if (finalizer != null) {
                             finalizer.run();
@@ -926,10 +923,8 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
     }
 
     @Override
-    public void send(int mask, boolean lighting) {
-        synchronized (sendLock) {
-            PaperweightPlatformAdapter.sendChunk(serverLevel, chunkX, chunkZ, lighting);
-        }
+    public void send() {
+        PaperweightPlatformAdapter.sendChunk(this, serverLevel, chunkX, chunkZ);
     }
 
     /**
