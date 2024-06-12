@@ -46,11 +46,20 @@ public class EntityType implements RegistryItem, Keyed {
      *
      * @return the id
      * @since TODO
+     */
+    public String id() {
+        return this.id;
+    }
+
+    /**
+     * Gets the id of this entity type.
+     *
+     * @return the id
      * @deprecated use {@link #id()}
      */
     @Deprecated(forRemoval = true, since = "TODO")
     @Override
-    public String id() {
+    public String getId() {
         return this.id;
     }
 
