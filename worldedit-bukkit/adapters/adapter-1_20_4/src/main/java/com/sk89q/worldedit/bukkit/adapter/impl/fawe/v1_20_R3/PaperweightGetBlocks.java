@@ -89,7 +89,6 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
     private final Registry<Biome> biomeRegistry;
     private final IdMap<Holder<Biome>> biomeHolderIdMap;
     private final ConcurrentHashMap<Integer, PaperweightGetBlocks_Copy> copies = new ConcurrentHashMap<>();
-    private final Object sendLock = new Object();
     private LevelChunkSection[] sections;
     private LevelChunk levelChunk;
     private DataLayer[] blockLight;
@@ -790,7 +789,7 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
                         nmsChunk.setUnsaved(true);
                         // send to player
                         if (Settings.settings().LIGHTING.MODE == 0 || !Settings.settings().LIGHTING.DELAY_PACKET_SENDING) {
-                            this.send(finalMask, finalLightUpdate);
+                            this.send();
                         }
                         if (finalizer != null) {
                             finalizer.run();
@@ -886,10 +885,8 @@ public class PaperweightGetBlocks extends CharGetBlocks implements BukkitGetBloc
     }
 
     @Override
-    public void send(int mask, boolean lighting) {
-        synchronized (sendLock) {
-            PaperweightPlatformAdapter.sendChunk(serverLevel, chunkX, chunkZ, lighting);
-        }
+    public void send() {
+        PaperweightPlatformAdapter.sendChunk(this, serverLevel, chunkX, chunkZ);
     }
 
     /**

@@ -71,6 +71,7 @@ public class BaseItem implements NbtValued {
      * @param itemType The type to set
      */
     public void setType(ItemType itemType) {
+        checkNotNull(itemType);
         this.itemType = itemType;
     }
 
@@ -128,7 +129,7 @@ public class BaseItem implements NbtValued {
             }
         }
 
-        return getType().getId() + nbtString;
+        return getType().id() + nbtString;
     }
     //FAWE end
 }

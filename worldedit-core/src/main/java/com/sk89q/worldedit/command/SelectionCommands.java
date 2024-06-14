@@ -30,6 +30,7 @@ import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
+import com.sk89q.worldedit.blocks.BaseItem;
 import com.sk89q.worldedit.blocks.BaseItemStack;
 import com.sk89q.worldedit.command.argument.SelectorChoice;
 import com.sk89q.worldedit.command.tool.NavigationWand;
@@ -38,6 +39,8 @@ import com.sk89q.worldedit.command.util.CommandPermissions;
 import com.sk89q.worldedit.command.util.CommandPermissionsConditionGenerator;
 import com.sk89q.worldedit.command.util.Logging;
 import com.sk89q.worldedit.entity.Player;
+import com.sk89q.worldedit.extension.input.InputParseException;
+import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.extension.platform.Actor;
 import com.sk89q.worldedit.extension.platform.Locatable;
 import com.sk89q.worldedit.extension.platform.permission.ActorSelectorLimits;
@@ -76,8 +79,6 @@ import com.sk89q.worldedit.util.formatting.text.format.TextColor;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockType;
-import com.sk89q.worldedit.world.item.ItemType;
-import com.sk89q.worldedit.world.item.ItemTypes;
 import com.sk89q.worldedit.world.storage.ChunkStore;
 import org.enginehub.piston.annotation.Command;
 import org.enginehub.piston.annotation.CommandContainer;
@@ -325,22 +326,28 @@ public class SelectionCommands {
         //FAWE start
         session.loadDefaults(player, true);
         //FAWE end
-        String wandId = navWand ? session.getNavWandItem() : session.getWandItem();
-        if (wandId == null) {
-            wandId = navWand ? we.getConfiguration().navigationWand : we.getConfiguration().wandItem;
+        BaseItem wand = navWand ? session.getNavWandBaseItem() : session.getWandBaseItem();
+        if (wand == null) {
+            String wandId = navWand ? we.getConfiguration().navigationWand : we.getConfiguration().wandItem;
+            //FAWE start - allow item NBT
+            ParserContext parserContext = new ParserContext();
+            parserContext.setActor(player);
+            parserContext.setSession(session);
+            try {
+                wand = WorldEdit.getInstance().getItemFactory().parseFromInput(wandId, parserContext);
+            } catch (InputParseException e) {
+                player.print(Caption.of("worldedit.wand.invalid"));
+                return;
+            }
         }
-        ItemType itemType = ItemTypes.parse(wandId);
-        if (itemType == null) {
-            player.print(Caption.of("worldedit.wand.invalid"));
-            return;
-        }
-        player.giveItem(new BaseItemStack(itemType, 1));
+        player.giveItem(new BaseItemStack(wand.getType(), wand.getNbtReference(), 1));
+        //FAWE end
         //FAWE start - instance-iate session
         if (navWand) {
-            session.setTool(itemType, NavigationWand.INSTANCE);
+            session.setTool(wand, NavigationWand.INSTANCE);
             player.print(Caption.of("worldedit.wand.navwand.info"));
         } else {
-            session.setTool(itemType, SelectionWand.INSTANCE);
+            session.setTool(wand, SelectionWand.INSTANCE);
             player.print(Caption.of("worldedit.wand.selwand.info"));
             //FAWE end
         }
@@ -832,7 +839,7 @@ public class SelectionCommands {
                 toolTip = TextComponent.of(state.getAsString());
                 blockName = blockName.append(TextComponent.of("*"));
             } else {
-                toolTip = TextComponent.of(blockType.getId());
+                toolTip = TextComponent.of(blockType.id());
             }
             blockName = blockName.hoverEvent(HoverEvent.of(HoverEvent.Action.SHOW_TEXT, toolTip));
             line.append(blockName);
