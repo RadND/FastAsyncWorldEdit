@@ -99,7 +99,7 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
 
     private static final Field fieldTickingFluidCount;
     private static final Field fieldTickingBlockCount;
-    private static final Field fieldNonEmptyBlockCount;
+    private static final Field fieldBiomes;
 
     private static final Field fieldPropertiesCodec;
 
@@ -145,8 +145,15 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
             fieldTickingFluidCount.setAccessible(true);
             fieldTickingBlockCount = LevelChunkSection.class.getDeclaredField(Refraction.pickName("tickingBlockCount", "f"));
             fieldTickingBlockCount.setAccessible(true);
-            fieldNonEmptyBlockCount = LevelChunkSection.class.getDeclaredField(Refraction.pickName("nonEmptyBlockCount", "e"));
-            fieldNonEmptyBlockCount.setAccessible(true);
+            Field tmpFieldBiomes;
+            try {
+                // It seems to actually be biomes, but is apparently obfuscated to "i"
+                tmpFieldBiomes = LevelChunkSection.class.getDeclaredField("biomes");
+            } catch (NoSuchFieldException ignored) {
+                tmpFieldBiomes = LevelChunkSection.class.getDeclaredField("i");
+            }
+            fieldBiomes = tmpFieldBiomes;
+            fieldBiomes.setAccessible(true);
 
             fieldPropertiesCodec = StateHolder.class.getDeclaredField(Refraction.pickName("propertiesCodec", "f"));
             fieldPropertiesCodec.setAccessible(true);
@@ -413,7 +420,7 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
             @Nullable PalettedContainer<Holder<Biome>> biomes
     ) {
         if (set == null) {
-            return newChunkSection(layer, biomeRegistry, biomes);
+            return newChunkSection(biomeRegistry, biomes);
         }
         final int[] blockToPalette = FaweCache.INSTANCE.BLOCK_TO_PALETTE.get();
         final int[] paletteToBlock = FaweCache.INSTANCE.PALETTE_TO_BLOCK.get();
@@ -503,7 +510,6 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
 
     @SuppressWarnings("deprecation") // Only deprecated in paper
     private static LevelChunkSection newChunkSection(
-            int layer,
             Registry<Biome> biomeRegistry,
             @Nullable PalettedContainer<Holder<Biome>> biomes
     ) {
@@ -516,6 +522,14 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
                 PalettedContainer.Strategy.SECTION_STATES
         );
         return new LevelChunkSection(dataPaletteBlocks, biomes);
+    }
+
+    public static void setBiomesToChunkSection(LevelChunkSection section, PalettedContainer<Holder<Biome>> biomes) {
+        try {
+            fieldBiomes.set(section, biomes);
+        } catch (IllegalAccessException e) {
+            LOGGER.error("Could not set biomes to chunk section", e);
+        }
     }
 
     /**

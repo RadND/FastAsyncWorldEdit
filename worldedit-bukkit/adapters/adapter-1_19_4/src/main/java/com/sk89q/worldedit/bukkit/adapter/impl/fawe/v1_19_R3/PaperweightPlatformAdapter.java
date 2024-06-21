@@ -98,7 +98,7 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
 
     private static final Field fieldTickingFluidCount;
     private static final Field fieldTickingBlockCount;
-    private static final Field fieldNonEmptyBlockCount;
+    private static final Field fieldBiomes;
 
     private static final Field fieldPropertiesCodec;
 
@@ -141,8 +141,15 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
             fieldTickingFluidCount.setAccessible(true);
             fieldTickingBlockCount = LevelChunkSection.class.getDeclaredField(Refraction.pickName("tickingBlockCount", "g"));
             fieldTickingBlockCount.setAccessible(true);
-            fieldNonEmptyBlockCount = LevelChunkSection.class.getDeclaredField(Refraction.pickName("nonEmptyBlockCount", "f"));
-            fieldNonEmptyBlockCount.setAccessible(true);
+            Field tmpFieldBiomes;
+            try {
+                // It seems to actually be biomes, but is apparently obfuscated to "j"
+                tmpFieldBiomes = LevelChunkSection.class.getDeclaredField("biomes");
+            } catch (NoSuchFieldException ignored) {
+                tmpFieldBiomes = LevelChunkSection.class.getDeclaredField("j");
+            }
+            fieldBiomes = tmpFieldBiomes;
+            fieldBiomes.setAccessible(true);
 
             fieldPropertiesCodec = StateHolder.class.getDeclaredField(Refraction.pickName("propertiesCodec", "f"));
             fieldPropertiesCodec.setAccessible(true);
@@ -505,6 +512,14 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
                 null
         );
         return new LevelChunkSection(layer, dataPaletteBlocks, biomes);
+    }
+
+    public static void setBiomesToChunkSection(LevelChunkSection section, PalettedContainer<Holder<Biome>> biomes) {
+        try {
+            fieldBiomes.set(section, biomes);
+        } catch (IllegalAccessException e) {
+            LOGGER.error("Could not set biomes to chunk section", e);
+        }
     }
 
     /**
