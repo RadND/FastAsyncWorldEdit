@@ -19,7 +19,6 @@
 
 package com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_20_R3;
 
-import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.internal.block.BlockStateIdAccess;
 import com.sk89q.worldedit.internal.wna.WorldNativeAccess;
@@ -73,8 +72,8 @@ public class PaperweightWorldNativeAccess implements WorldNativeAccess<LevelChun
     public net.minecraft.world.level.block.state.BlockState toNative(BlockState state) {
         int stateId = BlockStateIdAccess.getBlockStateId(state);
         return BlockStateIdAccess.isValidInternalId(stateId)
-                ? Block.stateById(stateId)
-                : ((CraftBlockData) BukkitAdapter.adapt(state)).getState();
+            ? Block.stateById(stateId)
+            : ((CraftBlockData) BukkitAdapter.adapt(state)).getState();
     }
 
     @Override
@@ -110,7 +109,7 @@ public class PaperweightWorldNativeAccess implements WorldNativeAccess<LevelChun
         if (tileEntity == null) {
             return false;
         }
-        Tag nativeTag = adapter.fromNative(new CompoundTag(tag));
+        Tag nativeTag = adapter.fromNativeLin(tag);
         PaperweightAdapter.readTagIntoTileEntity((net.minecraft.nbt.CompoundTag) nativeTag, tileEntity);
         return true;
     }
@@ -154,6 +153,12 @@ public class PaperweightWorldNativeAccess implements WorldNativeAccess<LevelChun
         }
     }
 
+    @Override
+    public void updateBlock(BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState, net.minecraft.world.level.block.state.BlockState newState) {
+        ServerLevel world = getWorld();
+        newState.onPlace(world, pos, oldState, false);
+    }
+
     // Not sure why neighborChanged is deprecated
     @SuppressWarnings("deprecation")
     private void fireNeighborChanged(BlockPos pos, ServerLevel world, Block block, BlockPos neighborPos) {
@@ -163,8 +168,6 @@ public class PaperweightWorldNativeAccess implements WorldNativeAccess<LevelChun
     @Override
     public void updateNeighbors(BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState, net.minecraft.world.level.block.state.BlockState newState, int recursionLimit) {
         ServerLevel world = getWorld();
-        // a == updateNeighbors
-        // b == updateDiagonalNeighbors
         oldState.updateIndirectNeighbourShapes(world, pos, NOTIFY, recursionLimit);
         if (sideEffectSet.shouldApply(SideEffect.EVENTS)) {
             CraftWorld craftWorld = world.getWorld();
@@ -187,5 +190,4 @@ public class PaperweightWorldNativeAccess implements WorldNativeAccess<LevelChun
     public void flush() {
 
     }
-
 }

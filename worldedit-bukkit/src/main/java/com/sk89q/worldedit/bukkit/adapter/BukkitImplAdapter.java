@@ -36,6 +36,7 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.entity.BaseEntity;
 import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.internal.wna.WorldNativeAccess;
+import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.registry.state.Property;
@@ -113,7 +114,7 @@ public interface BukkitImplAdapter<T> extends IBukkitAdapter {
     BlockState getBlock(Location location);
 
     /**
-     * Get the block at the given location.
+     * Get the block with NBT data at the given location.
      *
      * @param location the location
      * @return the block
@@ -313,11 +314,44 @@ public interface BukkitImplAdapter<T> extends IBukkitAdapter {
         throw new UnsupportedOperationException("This adapter does not support generating features.");
     }
 
+        /**
+     * Set the biome at a location.
+     *
+     * @param location the location
+     * @param biome    the new biome
+     */
+    default void setBiome(Location location, BiomeType biome) {
+        throw new UnsupportedOperationException("This adapter does not support custom biomes.");
+    }
+
+    /**
+     * Gets the current biome at a location.
+     *
+     * @param location the location
+     * @return the biome
+     */
+    default BiomeType getBiome(Location location) {
+        throw new UnsupportedOperationException("This adapter does not support custom biomes.");
+    }
+
     /**
      * Initialize registries that require NMS access.
      */
     default void initializeRegistries() {
 
+    }
+
+    /**
+     * Sends biome updates for the given chunks.
+     *
+     * <p>This doesn't modify biomes at all, it just sends the current state of the biomes
+     * in the world to all of the nearby players, updating the visual representation of the
+     * biomes on their clients.</p>
+     *
+     * @param world  the world
+     * @param chunks a list of chunk coordinates to send biome updates for
+     */
+    default void sendBiomeUpdates(World world, Iterable<BlockVector2> chunks) {
     }
 
     //FAWE start
