@@ -24,13 +24,13 @@ import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.registry.state.Property;
 import com.sk89q.worldedit.util.Direction;
-import com.sk89q.worldedit.util.nbt.CompoundBinaryTag;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockCategories;
 import com.sk89q.worldedit.world.block.BlockCategory;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.block.BlockTypesCache;
+import org.enginehub.linbus.tree.LinCompoundTag;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -472,9 +472,9 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
         if (block.getOrdinalChar() != newOrdinal) {
             BlockState newState = BlockTypesCache.states[newOrdinal];
             orDefault.setBlock(set.x(), set.y(), set.z(), newState);
-            CompoundBinaryTag nbt = block.getNbt();
+            CompoundTag nbt = block.getNbtData();
             if (nbt != null && newState.getBlockType() == block.getBlockType()) {
-                orDefault.setTile(set.x(), set.y(), set.z(), (CompoundTag) nbt.asBinaryTag());
+                orDefault.setTile(set.x(), set.y(), set.z(), nbt);
             }
             return true;
         }
@@ -497,7 +497,7 @@ public abstract class PlacementStateProcessor extends AbstractDelegateExtent imp
         char newOrdinal = getBlockOrdinal(position.x(), position.y(), position.z(), block.toBlockState());
         if (block.getOrdinalChar() != newOrdinal) {
             BlockState state = BlockTypesCache.states[newOrdinal];
-            CompoundBinaryTag nbt = block.getNbt();
+            LinCompoundTag nbt = block.getNbt();
             if (nbt != null && state.getBlockType() == block.getBlockType()) {
                 state.toBaseBlock(nbt);
             }
