@@ -43,7 +43,7 @@ public class FluidType implements RegistryItem, Keyed {
      * Gets the ID of this fluid.
      *
      * @return The id
-     * @since TODO
+     * @since 2.11.0
      */
     @Override
     public String id() {
@@ -56,7 +56,7 @@ public class FluidType implements RegistryItem, Keyed {
      * @return the id
      * @deprecated use {@link #id()}
      */
-    @Deprecated(forRemoval = true, since = "TODO")
+    @Deprecated(forRemoval = true, since = "2.11.0")
     @Override
     public String getId() {
         return this.id;
