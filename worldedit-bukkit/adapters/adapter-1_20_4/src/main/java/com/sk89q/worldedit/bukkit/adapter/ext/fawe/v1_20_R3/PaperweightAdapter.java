@@ -920,14 +920,15 @@ public final class PaperweightAdapter implements BukkitImplAdapter<net.minecraft
             String key = tagKey.location().toString();
             if (BiomeCategory.REGISTRY.get(key) == null) {
                 BiomeCategory.REGISTRY.register(key, new BiomeCategory(
-                        key,
-                        () -> biomeRegistry.getTag(tagKey)
-                                .stream()
-                                .flatMap(HolderSet.Named::stream)
-                                .map(Holder::value)
-                                .map(this::adapt)
-                                .collect(Collectors.toSet()))
-                );
+                    key,
+                    () -> biomeRegistry
+                            .getTag(tagKey)
+                            .stream()
+                            .flatMap(HolderSet.Named::stream)
+                            .map(Holder::value)
+                            .map(this::adapt)
+                            .collect(Collectors.toSet())
+                ));
             }
         });
     }
