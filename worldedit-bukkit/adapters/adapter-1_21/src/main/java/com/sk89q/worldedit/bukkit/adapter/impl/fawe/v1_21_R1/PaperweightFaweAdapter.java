@@ -21,7 +21,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.adapter.BukkitImplAdapter;
 import com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_21_R1.PaperweightAdapter;
 import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_21_R1.nbt.PaperweightLazyCompoundTag;
-import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_21_R1.regen.PaperweightRegen;
 import com.sk89q.worldedit.entity.BaseEntity;
 import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.internal.block.BlockStateIdAccess;
@@ -733,10 +732,10 @@ public final class PaperweightFaweAdapter extends FaweAdapter<net.minecraft.nbt.
         return parent.fromNative(foreign);
     }
 
-    @Override
-    public boolean regenerate(World bukkitWorld, Region region, Extent target, RegenOptions options) throws Exception {
-        return new PaperweightRegen(bukkitWorld, region, target, options).regenerate();
-    }
+//    @Override
+//    public boolean regenerate(org.bukkit.World bukkitWorld, Region region, Extent target, RegenOptions options) throws Exception {
+//        return new PaperweightRegen(bukkitWorld, region, target, options).regenerate();
+//    }
 
     @Override
     public IChunkGet get(World world, int chunkX, int chunkZ) {
